@@ -3,14 +3,12 @@ __author__ = 'xtwxfxk'
 
 import os
 import sys
-import urllib2
-import httplib
+import urllib
+import http.client
 import socks
 import socket
 import datetime
 import inspect
-from urllib import addinfourl
-from urllib2 import URLError
 
 from lutils import LUTILS_ROOT
 
@@ -45,9 +43,9 @@ def create_connection(address, proxyargs=None, timeout=socket._GLOBAL_DEFAULT_TI
     raise socket.error(msg)
 
 
-class SocksiPyConnection(httplib.HTTPConnection):
+class SocksiPyConnection(http.client.HTTPConnection):
     def __init__(self, proxyargs=None, *args, **kwargs):
-        httplib.HTTPConnection.__init__(self, *args, **kwargs)
+        http.client.HTTPConnection.__init__(self, *args, **kwargs)
         self.proxyargs = proxyargs
 
     def connect(self):
@@ -55,15 +53,15 @@ class SocksiPyConnection(httplib.HTTPConnection):
         if self._tunnel_host:
             self._tunnel()
 
-class SocksiPyHandler(urllib2.HTTPHandler):
+class SocksiPyHandler(urllib.request.HTTPHandler):
     def __init__(self, debuglevel=0, *args, **kwargs):
-        urllib2.HTTPHandler.__init__(self, debuglevel=debuglevel)
+        urllib.request.HTTPHandler.__init__(self, debuglevel=debuglevel)
         self.args = args
         self.kw = kwargs
 
     def http_open(self, req):
-        def build(host, port=None, strict=None, timeout=30):
-            return SocksiPyConnection(*self.args, host=host, port=port, strict=strict, timeout=timeout, **self.kw)
+        def build(host, port=None, timeout=30):
+            return SocksiPyConnection(*self.args, host=host, port=port, timeout=timeout, **self.kw)
         return self.do_open(build, req)
 
 
@@ -73,9 +71,9 @@ except ImportError:
     pass
 else:
 
-    class SocksiPysConnection(httplib.HTTPSConnection):
+    class SocksiPysConnection(http.client.HTTPSConnection):
         def __init__(self, proxyargs=None, *args, **kwargs):
-            httplib.HTTPSConnection.__init__(self, *args, **kwargs)
+            http.client.HTTPSConnection.__init__(self, *args, **kwargs)
             self.proxyargs = proxyargs
 
         def connect(self):
@@ -86,13 +84,13 @@ else:
 
             self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
 
-    class SocksiPysHandler(urllib2.HTTPSHandler):
+    class SocksiPysHandler(urllib.request.HTTPSHandler):
         def __init__(self, debuglevel=0, *args, **kwargs):
-            urllib2.HTTPSHandler.__init__(self, debuglevel=debuglevel)
+            urllib.request.HTTPSHandler.__init__(self, debuglevel=debuglevel)
             self.args = args
             self.kw = kwargs
 
         def https_open(self, req):
-            def build(host, port=None, strict=None, timeout=30):
-                return SocksiPysConnection(*self.args, host=host, port=port, strict=strict, timeout=timeout, **self.kw)
+            def build(host, port=None, timeout=30):
+                return SocksiPysConnection(*self.args, host=host, port=port, timeout=timeout, **self.kw)
             return self.do_open(build, req)

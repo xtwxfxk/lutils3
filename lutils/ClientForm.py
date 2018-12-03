@@ -61,21 +61,21 @@ __all__ = ['AmbiguityError', 'CheckboxControl', 'Control',
            'HiddenControl', 'IgnoreControl', 'ImageControl', 'IsindexControl',
            'Item', 'ItemCountError', 'ItemNotFoundError', 'Label',
            'ListControl', 'LocateError', 'Missing', 'ParseError', 'ParseFile',
-           'ParseFileEx', 'ParseResponse', 'ParseResponseEx','PasswordControl', 'ImgControl'
+           'ParseFileEx', 'ParseResponse', 'ParseResponseEx','PasswordControl',
            'RadioControl', 'ScalarControl', 'SelectControl',
            'SubmitButtonControl', 'SubmitControl', 'TextControl',
-           'TextareaControl', 'XHTMLCompatibleFormParser', 'ParseContent']
+           'TextareaControl', 'XHTMLCompatibleFormParser']
 
 # try: True
 # except NameError:
 #     True = 1
 #     False = 0
 
-# try: bool
-# except NameError:
-#     def bool(expr):
-#         if expr: return True
-#         else: return False
+try: bool
+except NameError:
+    def bool(expr):
+        if expr: return True
+        else: return False
 
 try:
     import logging
@@ -104,22 +104,21 @@ else:
         handler.setLevel(logging.DEBUG)
         _logger.addHandler(handler)
 
-import sys, copy, types, urllib, re, random
-import io as StringIO
-from urllib.parse import urlparse
+import sys, urllib, urllib.parse, types, copy, \
+    html.entities, re, random
 
-import sgmllib
-# monkeypatch to fix http://www.python.org/sf/803422 :-(
-sgmllib.charref = re.compile("&#(x?[0-9a-fA-F]+)[^0-9a-fA-F]")
+from io import StringIO
+
+# import sgmllib
+# # monkeypatch to fix http://www.python.org/sf/803422 :-(
+# sgmllib.charref = re.compile("&#(x?[0-9a-fA-F]+)[^0-9a-fA-F]")
 
 # HTMLParser.HTMLParser is recent, so live without it if it's not available
 # (also, sgmllib.SGMLParser is much more tolerant of bad HTML)
-try:
-    import HTMLParser
-except ImportError:
-    HAVE_MODULE_HTMLPARSER = False
-else:
-    HAVE_MODULE_HTMLPARSER = True
+
+from html.parser import HTMLParser
+
+
 
 try:
     import warnings
@@ -170,7 +169,7 @@ string.
             # non-sequence items should not work with len()
             x = len(query)
             # non-empty strings will fail this
-            if len(query) and type(query[0]) != types.TupleType:
+            if len(query) and type(query[0]) != tuple:
                 raise TypeError()
             # zero-length sequences of all types will get here and succeed,
             # but that's a minor nit - since the original implementation
@@ -185,8 +184,8 @@ string.
     if not doseq:
         # preserve old behavior
         for k, v in query:
-            k = urllib.quote_plus(str(k))
-            v = urllib.quote_plus(str(v))
+            k = urllib.parse.quote_plus(str(k))
+            v = urllib.parse.quote_plus(str(v))
             l.append(k + '=' + v)
     else:
         for k, v in query:
@@ -241,7 +240,7 @@ def unescape_charref(data, encoding):
     name, base = data, 10
     if name.startswith("x"):
         name, base= name[1:], 16
-    uc = unichr(int(name, base))
+    uc = chr(int(name, base))
     if encoding is None:
         return uc
     else:
@@ -252,22 +251,20 @@ def unescape_charref(data, encoding):
         return repl
 
 def get_entitydefs():
-    #import htmlentitydefs
-    import html.entities as htmlentitydefs
     from codecs import latin_1_decode
     entitydefs = {}
     try:
-        htmlentitydefs.name2codepoint
+        html.entities.name2codepoint
     except AttributeError:
         entitydefs = {}
-        for name, char in htmlentitydefs.entitydefs.items():
+        for name, char in html.entities.entitydefs.items():
             uc = latin_1_decode(char)[0]
             if uc.startswith("&#") and uc.endswith(";"):
                 uc = unescape_charref(uc[2:-1], None)
             entitydefs["&%s;" % name] = uc
     else:
-        for name, codepoint in htmlentitydefs.name2codepoint.items():
-            entitydefs["&%s;" % name] = unichr(codepoint)
+        for name, codepoint in html.entities.name2codepoint.items():
+            entitydefs["&%s;" % name] = chr(codepoint)
     return entitydefs
 
 
@@ -448,26 +445,15 @@ class ItemCountError(ValueError): pass
 
 # for backwards compatibility, ParseError derives from exceptions that were
 # raised by versions of ClientForm <= 0.2.5
-if HAVE_MODULE_HTMLPARSER:
-    SGMLLIB_PARSEERROR = sgmllib.SGMLParseError
-    class ParseError(sgmllib.SGMLParseError,
-                     HTMLParser.HTMLParseError,
-                     ):
-        pass
-else:
-    if hasattr(sgmllib, "SGMLParseError"):
-        SGMLLIB_PARSEERROR = sgmllib.SGMLParseError
-        class ParseError(sgmllib.SGMLParseError):
-            pass
-    else:
-        SGMLLIB_PARSEERROR = RuntimeError
-        class ParseError(RuntimeError):
-            pass
+
+SGMLLIB_PARSEERROR = RuntimeError
+class ParseError(RuntimeError):
+    pass
 
 
 class _AbstractFormParser:
     """forms attribute contains HTMLForm instances on completion."""
-    # thanks to Moshe Zadka for an example of sgmllib/htmllib usage
+    # thanks to Moshe Zadka for an example of HTMLParser usage
     def __init__(self, entitydefs=None, encoding=DEFAULT_ENCODING):
         if entitydefs is None:
             entitydefs = get_entitydefs()
@@ -735,19 +721,6 @@ class _AbstractFormParser:
         self._add_label(d)
         controls.append((type, name, d))
 
-    def do_img(self, attrs):
-        debug("%s", attrs)
-        d = {}
-        d["type"] = "img"
-        for key, val in attrs:
-            d[key] = self.unescape_attr_if_required(val)
-        controls = self._current_form[2]
-
-        type = d["type"]
-        name = d.get("name")
-        self._add_label(d)
-        controls.append((type, name, d))
-
     def do_isindex(self, attrs):
         debug("%s", attrs)
         d = {}
@@ -789,105 +762,137 @@ class _AbstractFormParser:
     def unknown_charref(self, ref): self.handle_data("&#%s;" % ref)
 
 
-if not HAVE_MODULE_HTMLPARSER:
-    class XHTMLCompatibleFormParser:
-        def __init__(self, entitydefs=None, encoding=DEFAULT_ENCODING):
-            raise ValueError("HTMLParser could not be imported")
-else:
-    class XHTMLCompatibleFormParser(_AbstractFormParser, HTMLParser.HTMLParser):
-        """Good for XHTML, bad for tolerance of incorrect HTML."""
-        # thanks to Michael Howitz for this!
-        def __init__(self, entitydefs=None, encoding=DEFAULT_ENCODING):
-            HTMLParser.HTMLParser.__init__(self)
-            _AbstractFormParser.__init__(self, entitydefs, encoding)
-
-        def feed(self, data):
-            try:
-                HTMLParser.HTMLParser.feed(self, data)
-            except HTMLParser.HTMLParseError as exc:
-                raise ParseError(exc)
-
-        def start_option(self, attrs):
-            _AbstractFormParser._start_option(self, attrs)
-
-        def end_option(self):
-            _AbstractFormParser._end_option(self)
-
-        def handle_starttag(self, tag, attrs):
-            try:
-                method = getattr(self, "start_" + tag)
-            except AttributeError:
-                try:
-                    method = getattr(self, "do_" + tag)
-                except AttributeError:
-                    pass  # unknown tag
-                else:
-                    method(attrs)
-            else:
-                method(attrs)
-
-        def handle_endtag(self, tag):
-            try:
-                method = getattr(self, "end_" + tag)
-            except AttributeError:
-                pass  # unknown tag
-            else:
-                method()
-
-        def unescape(self, name):
-            # Use the entitydefs passed into constructor, not
-            # HTMLParser.HTMLParser's entitydefs.
-            return self.unescape_attr(name)
-
-        def unescape_attr_if_required(self, name):
-            return name  # HTMLParser.HTMLParser already did it
-        def unescape_attrs_if_required(self, attrs):
-            return attrs  # ditto
-
-        def close(self):
-            HTMLParser.HTMLParser.close(self)
-            self.end_body()
-
-
-class _AbstractSgmllibParser(_AbstractFormParser):
-
-    def do_option(self, attrs):
-        _AbstractFormParser._start_option(self, attrs)
-
-    if sys.version_info[:2] >= (2,5):
-        # we override this attr to decode hex charrefs
-        entity_or_charref = re.compile(
-            '&(?:([a-zA-Z][-.a-zA-Z0-9]*)|#(x?[0-9a-fA-F]+))(;?)')
-        def convert_entityref(self, name):
-            return unescape("&%s;" % name, self._entitydefs, self._encoding)
-        def convert_charref(self, name):
-            return unescape_charref("%s" % name, self._encoding)
-        def unescape_attr_if_required(self, name):
-            return name  # sgmllib already did it
-        def unescape_attrs_if_required(self, attrs):
-            return attrs  # ditto
-    else:
-        def unescape_attr_if_required(self, name):
-            return self.unescape_attr(name)
-        def unescape_attrs_if_required(self, attrs):
-            return self.unescape_attrs(attrs)
-
-
-class FormParser(_AbstractSgmllibParser, sgmllib.SGMLParser):
-    """Good for tolerance of incorrect HTML, bad for XHTML."""
+class XHTMLCompatibleFormParser(_AbstractFormParser, HTMLParser):
+    """Good for XHTML, bad for tolerance of incorrect HTML."""
+    # thanks to Michael Howitz for this!
     def __init__(self, entitydefs=None, encoding=DEFAULT_ENCODING):
-        sgmllib.SGMLParser.__init__(self)
+        HTMLParser.__init__(self)
         _AbstractFormParser.__init__(self, entitydefs, encoding)
 
     def feed(self, data):
         try:
-            sgmllib.SGMLParser.feed(self, data)
-        except SGMLLIB_PARSEERROR as exc:
+            HTMLParser.feed(self, data)
+        except HTMLParser.HTMLParseError as exc:
+            raise ParseError(exc)
+
+    def start_option(self, attrs):
+        _AbstractFormParser._start_option(self, attrs)
+
+    def end_option(self):
+        _AbstractFormParser._end_option(self)
+
+    def handle_starttag(self, tag, attrs):
+        try:
+            method = getattr(self, "start_" + tag)
+        except AttributeError:
+            try:
+                method = getattr(self, "do_" + tag)
+            except AttributeError:
+                pass  # unknown tag
+            else:
+                method(attrs)
+        else:
+            method(attrs)
+
+    def handle_endtag(self, tag):
+        try:
+            method = getattr(self, "end_" + tag)
+        except AttributeError:
+            pass  # unknown tag
+        else:
+            method()
+
+    def unescape(self, name):
+        # Use the entitydefs passed into constructor, not
+        # HTMLParser.HTMLParser's entitydefs.
+        return self.unescape_attr(name)
+
+    def unescape_attr_if_required(self, name):
+        return name  # HTMLParser.HTMLParser already did it
+    def unescape_attrs_if_required(self, attrs):
+        return attrs  # ditto
+
+    def close(self):
+        HTMLParser.close(self)
+        self.end_body()
+
+
+# class _AbstractSgmllibParser(_AbstractFormParser):
+#
+#     def do_option(self, attrs):
+#         _AbstractFormParser._start_option(self, attrs)
+
+    # if sys.version_info[:2] >= (2,5):
+    #     # we override this attr to decode hex charrefs
+    #     entity_or_charref = re.compile(
+    #         '&(?:([a-zA-Z][-.a-zA-Z0-9]*)|#(x?[0-9a-fA-F]+))(;?)')
+    #     def convert_entityref(self, name):
+    #         return unescape("&%s;" % name, self._entitydefs, self._encoding)
+    #     def convert_charref(self, name):
+    #         return unescape_charref("%s" % name, self._encoding)
+    #     def unescape_attr_if_required(self, name):
+    #         return name  # HTMLParser already did it
+    #     def unescape_attrs_if_required(self, attrs):
+    #         return attrs  # ditto
+    # else:
+    #     def unescape_attr_if_required(self, name):
+    #         return self.unescape_attr(name)
+    #     def unescape_attrs_if_required(self, attrs):
+    #         return self.unescape_attrs(attrs)
+
+
+class FormParser(_AbstractFormParser, HTMLParser):
+    """Good for tolerance of incorrect HTML, bad for XHTML."""
+    def __init__(self, entitydefs=None, encoding=DEFAULT_ENCODING):
+        HTMLParser.__init__(self)
+        _AbstractFormParser.__init__(self, entitydefs, encoding)
+
+    def feed(self, data):
+        try:
+            HTMLParser.feed(self, data)
+        except HTMLParser.HTMLParseError as exc:
             raise ParseError(exc)
 
     def close(self):
-        sgmllib.SGMLParser.close(self)
+        HTMLParser.close(self)
         self.end_body()
+
+    def start_option(self, attrs):
+        _AbstractFormParser._start_option(self, attrs)
+
+    def end_option(self):
+        _AbstractFormParser._end_option(self)
+
+    def handle_starttag(self, tag, attrs):
+        try:
+            method = getattr(self, "start_" + tag)
+        except AttributeError:
+            try:
+                method = getattr(self, "do_" + tag)
+            except AttributeError:
+                pass  # unknown tag
+            else:
+                method(attrs)
+        else:
+            method(attrs)
+
+    def handle_endtag(self, tag):
+        try:
+            method = getattr(self, "end_" + tag)
+        except AttributeError:
+            pass  # unknown tag
+        else:
+            method()
+
+    def unescape(self, name):
+        # Use the entitydefs passed into constructor, not
+        # HTMLParser.HTMLParser's entitydefs.
+        return self.unescape_attr(name)
+
+    def unescape_attr_if_required(self, name):
+        return name  # HTMLParser.HTMLParser already did it
+    def unescape_attrs_if_required(self, attrs):
+        return attrs  # ditto
 
 
 # sigh, must support mechanize by allowing dynamic creation of classes based on
@@ -943,78 +948,9 @@ else:
     __all__ += ['RobustFormParser', 'NestingRobustFormParser']
 
 
-#FormParser = XHTMLCompatibleFormParser  # testing hack
-#FormParser = RobustFormParser  # testing hack
+# FormParser = XHTMLCompatibleFormParser  # testing hack
+# FormParser = RobustFormParser  # testing hack
 
-def ParseContent(content, base_uri='', *args, **kwds):
-    return _ParseContentEx(content, base_uri, *args, **kwds)[1:]
-
-def _ParseContentEx(content, base_uri='',
-                 select_default=False,
-                 ignore_errors=False,
-                 form_parser_class=FormParser,
-                 request_class=urllib.request.Request,
-                 entitydefs=None,
-                 backwards_compat=True,
-                 encoding=DEFAULT_ENCODING,
-                 _urljoin=urlparse.urljoin,
-                 _urlparse=urlparse.urlparse,
-                 _urlunparse=urlparse.urlunparse,
-                 save_file=None
-                 ):
-    if backwards_compat:
-        deprecation("operating in backwards-compatibility mode", 1)
-    fp = form_parser_class(entitydefs, encoding)
-    saveFile = None
-    if save_file:
-        saveFile = open(save_file, 'w')
-
-    if saveFile:
-        saveFile.write(data)
-    try:
-        fp.feed(content)
-    except ParseError as e:
-        e.base_uri = base_uri
-        raise
-
-    fp.close()
-    if saveFile:
-        saveFile.close()
-    if fp.base is not None:
-        # HTML BASE element takes precedence over document URI
-        base_uri = fp.base
-    labels = []  # Label(label) for label in fp.labels]
-    id_to_labels = {}
-    for l in fp.labels:
-        label = Label(l)
-        labels.append(label)
-        for_id = l["for"]
-        coll = id_to_labels.get(for_id)
-        if coll is None:
-            id_to_labels[for_id] = [label]
-        else:
-            coll.append(label)
-    forms = []
-    for (name, action, method, enctype), attrs, controls in fp.forms:
-        if action is None:
-            action = base_uri
-        else:
-            action = _urljoin(base_uri, action)
-        # would be nice to make HTMLForm class (form builder) pluggable
-        form = HTMLForm(
-            action, method, enctype, name, attrs, request_class,
-            forms, labels, id_to_labels, backwards_compat)
-        form._urlparse = _urlparse
-        form._urlunparse = _urlunparse
-        for ii in range(len(controls)):
-            type, name, attrs = controls[ii]
-            # index=ii*10 allows ImageControl to return multiple ordered pairs
-            form.new_control(
-                type, name, attrs, select_default=select_default, index=ii*10)
-        forms.append(form)
-    for form in forms:
-        form.fixup()
-    return forms
 
 def ParseResponseEx(response,
                     select_default=False,
@@ -1024,9 +960,9 @@ def ParseResponseEx(response,
                     encoding=DEFAULT_ENCODING,
 
                     # private
-                    _urljoin=urlparse.urljoin,
-                    _urlparse=urlparse.urlparse,
-                    _urlunparse=urlparse.urlunparse,
+                    _urljoin=urllib.parse.urljoin,
+                    _urlparse=urllib.parse.urlparse,
+                    _urlunparse=urllib.parse.urlunparse,
                     ):
     """Identical to ParseResponse, except that:
 
@@ -1058,9 +994,9 @@ def ParseFileEx(file, base_uri,
                 encoding=DEFAULT_ENCODING,
 
                 # private
-                _urljoin=urlparse.urljoin,
-                _urlparse=urlparse.urlparse,
-                _urlunparse=urlparse.urlunparse,
+                _urljoin=urllib.parse.urljoin,
+                _urlparse=urllib.parse.urlparse,
+                _urlunparse=urllib.parse.urlunparse,
                 ):
     """Identical to ParseFile, except that:
 
@@ -1087,7 +1023,7 @@ def ParseFileEx(file, base_uri,
 def ParseResponse(response, *args, **kwds):
     """Parse HTTP response and return a list of HTMLForm instances.
 
-    The return value of urllib2.urlopen can be conveniently passed to this
+    The return value of urllib.request.urlopen can be conveniently passed to this
     function as the response parameter.
 
     ClientForm.ParseError is raised on parse errors.
@@ -1098,7 +1034,7 @@ def ParseResponse(response, *args, **kwds):
      pick the first item as the default if none are selected in the HTML
     form_parser_class: class to instantiate and use to pass
     request_class: class to return from .click() method (default is
-     urllib2.Request)
+     urllib.request.Request)
     entitydefs: mapping like {"&amp;": "&", ...} containing HTML entity
      definitions (a sensible default is used)
     encoding: character encoding used for encoding numeric character references
@@ -1138,7 +1074,7 @@ def ParseResponse(response, *args, **kwds):
 
     There is a choice of parsers.  ClientForm.XHTMLCompatibleFormParser (uses
     HTMLParser.HTMLParser) works best for XHTML, ClientForm.FormParser (uses
-    sgmllib.SGMLParser) (the default) works better for ordinary grubby HTML.
+    HTMLParser) (the default) works better for ordinary grubby HTML.
     Note that HTMLParser is only available in Python 2.2 and later.  You can
     pass your own class in here as a hack to work around bad HTML, but at your
     own risk: there is no well-defined interface.
@@ -1170,21 +1106,15 @@ def _ParseFileEx(file, base_uri,
                  entitydefs=None,
                  backwards_compat=False,
                  encoding=DEFAULT_ENCODING,
-                 _urljoin=urlparse.urljoin,
-                 _urlparse=urlparse.urlparse,
-                 _urlunparse=urlparse.urlunparse,
-                 save_file=None
+                 _urljoin=urllib.parse.urljoin,
+                 _urlparse=urllib.parse.urlparse,
+                 _urlunparse=urllib.parse.urlunparse,
                  ):
     if backwards_compat:
         deprecation("operating in backwards-compatibility mode", 1)
     fp = form_parser_class(entitydefs, encoding)
-    saveFile = None
-    if save_file:
-        saveFile = open(save_file, 'w')
     while 1:
         data = file.read(CHUNK)
-        if saveFile:
-            saveFile.write(data)
         try:
             fp.feed(data)
         except ParseError as e:
@@ -1192,8 +1122,6 @@ def _ParseFileEx(file, base_uri,
             raise
         if len(data) != CHUNK: break
     fp.close()
-    if saveFile:
-        saveFile.close()
     if fp.base is not None:
         # HTML BASE element takes precedence over document URI
         base_uri = fp.base
@@ -1403,17 +1331,16 @@ class ScalarControl(Control):
         self.__dict__["type"] = type.lower()
         self.__dict__["name"] = name
         self._value = attrs.get("value")
-        self.disabled = attrs.has_key("disabled")
-        self.readonly = attrs.has_key("readonly")
+        self.disabled = 'disabled' in attrs
+        self.readonly = 'readonly' in attrs
         self.id = attrs.get("id")
 
         self.attrs = attrs.copy()
-        self.attrs['type'] = type
-        
+
         self._clicked = False
 
-        self._urlparse = urlparse.urlparse
-        self._urlunparse = urlparse.urlunparse
+        self._urlparse = urllib.parse.urlparse
+        self._urlunparse = urllib.parse.urlunparse
 
     def __getattr__(self, name):
         if name == "value":
@@ -1606,13 +1533,13 @@ class IsindexControl(ScalarControl):
     control, in which case the ISINDEX gets submitted instead of the form:
 
     form.set_value("my isindex value", type="isindex")
-    urllib2.urlopen(form.click(type="isindex"))
+    urllib.request.urlopen(form.click(type="isindex"))
 
     ISINDEX elements outside of FORMs are ignored.  If you want to submit one
     by hand, do it like so:
 
-    url = urlparse.urljoin(page_uri, "?"+urllib.quote_plus("my isindex value"))
-    result = urllib2.urlopen(url)
+    url = urllib.parse.urljoin(page_uri, "?"+urllib.quote_plus("my isindex value"))
+    result = urllib.request.urlopen(url)
 
     """
     def __init__(self, type, name, attrs, index=None):
@@ -1633,7 +1560,7 @@ class IsindexControl(ScalarControl):
         # Submission of ISINDEX is explained in the HTML 3.2 spec, though.
         parts = self._urlparse(form.action)
         rest, (query, frag) = parts[:-2], parts[-2:]
-        parts = rest + (urllib.parse.quote_plus(self.value), None)
+        parts = rest + (urllib.quote_plus(self.value), None)
         url = self._urlunparse(parts)
         req_data = url, None, []
 
@@ -2599,7 +2526,6 @@ class ImageControl(SubmitControl):
 class PasswordControl(TextControl): pass
 class HiddenControl(TextControl): pass
 class TextareaControl(TextControl): pass
-class ImgControl(TextControl): pass
 class SubmitButtonControl(SubmitControl): pass
 
 
@@ -2618,7 +2544,7 @@ class HTMLForm:
 
     Forms can be filled in with data to be returned to the server, and then
     submitted, using the click method to generate a request object suitable for
-    passing to urllib2.urlopen (or the click_request_data or click_pairs
+    passing to urllib.request.urlopen (or the click_request_data or click_pairs
     methods if you're not using urllib2).
 
     import ClientForm
@@ -2628,7 +2554,7 @@ class HTMLForm:
     form["query"] = "Python"
     form.find_control("nr_results").get("lots").selected = True
 
-    response = urllib2.urlopen(form.click())
+    response = urllib.request.urlopen(form.click())
 
     Usually, HTMLForm instances are not created directly.  Instead, the
     ParseFile or ParseResponse factory functions are used.  If you do construct
@@ -2821,7 +2747,6 @@ class HTMLForm:
 
     type2class = {
         "text": TextControl,
-        "img": ImgControl,
         "password": PasswordControl,
         "hidden": HiddenControl,
         "textarea": TextareaControl,
@@ -2882,8 +2807,8 @@ class HTMLForm:
 
         self.backwards_compat = backwards_compat  # note __setattr__
 
-        self._urlunparse = urlparse.urlunparse
-        self._urlparse = urlparse.urlparse
+        self._urlunparse = urllib.parse.urlunparse
+        self._urlparse = urllib.parse.urlparse
 
     def __getattr__(self, name):
         if name == "backwards_compat":
@@ -3185,8 +3110,8 @@ class HTMLForm:
               label=None):
         """Return request that would result from clicking on a control.
 
-        The request object is a urllib2.Request instance, which you can pass to
-        urllib2.urlopen (or ClientCookie.urlopen).
+        The request object is a urllib.request.Request instance, which you can pass to
+        urllib.request.urlopen (or ClientCookie.urlopen).
 
         Only some control types (INPUT/SUBMIT & BUTTON/SUBMIT buttons and
         IMAGEs) can be clicked.
@@ -3215,7 +3140,7 @@ class HTMLForm:
         """As for click method, but return a tuple (url, data, headers).
 
         You can use this data to send a request to the server.  This is useful
-        if you're using httplib or urllib rather than urllib2.  Otherwise, use
+        if you're using httplib or urllib rather than urllib.  Otherwise, use
         the click method.
 
         # Untested.  Have to subclass to add headers, I think -- so use urllib2
@@ -3225,11 +3150,11 @@ class HTMLForm:
         r = urllib.urlopen(url, data)
 
         # Untested.  I don't know of any reason to use httplib -- you can get
-        # just as much control with urllib2.
+        # just as much control with urllib.
         import httplib, urlparse
         url, data, hdrs = form.click_request_data()
         tup = urlparse(url)
-        host, path = tup[1], urlparse.urlunparse((None, None)+tup[2:])
+        host, path = tup[1], urllib.parse.urlunparse((None, None)+tup[2:])
         conn = httplib.HTTPConnection(host)
         if data:
             httplib.request("POST", path, data, hdrs)
@@ -3440,7 +3365,7 @@ class HTMLForm:
     def _request_data(self):
         """Return a tuple (url, data, headers)."""
         method = self.method.upper()
-        #scheme, netloc, path, parameters, query, frag = urlparse.urlparse(self.action)
+        #scheme, netloc, path, parameters, query, frag = urllib.parse.urlparse(self.action)
         parts = self._urlparse(self.action)
         rest, (query, frag) = parts[:-2], parts[-2:]
 

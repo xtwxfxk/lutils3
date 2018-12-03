@@ -19,7 +19,7 @@ from http import cookiejar
 from urllib.parse import urlparse
 import io, urllib
 from urllib import request
-import http.client as httplib
+import http.client
 
 #from scrapy.selector import Selector
 from lxml import html
@@ -136,7 +136,7 @@ class LCookieJar():
             rest)
 
 
-class DumpCookieJar(LCookieJar, cookiejar.CookieJar):
+class DumpCookieJar(cookiejar.CookieJar): # LCookieJar
     def __getstate__(self):
         state = self.__dict__.copy()
         del state['_cookies_lock']
@@ -255,7 +255,7 @@ class LRequest(object):
             headerFile = open(header_path, 'r').read()
             headerFile = '\n'.join([x for x in headerFile.split("\n") if x.strip() != ''])
             headerList = filter(lambda x: len(x.strip()) > 0, filter(None, headerFile.split('#')))
-            headerContent = random.choice(headerList)
+            headerContent = random.choice(list(headerList))
             header_lines = headerContent.splitlines()
             for header_line in header_lines:
                 if len(header_line.strip()) > 0:
@@ -275,7 +275,7 @@ class LRequest(object):
                 logger.info('%s: %s %s: begin open' % (datetime.datetime.now().isoformat(), os.getpid(), id(self)))
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
-            if isinstance(url, basestring):
+            if isinstance(url, str):
                 logger.info('Load URL: %s' % url)
 
                 url = url.replace(' ', '%20')
@@ -305,7 +305,7 @@ class LRequest(object):
                     self.current_url = response.geturl()
                     self.body = response, isdecode, is_xpath
                     return response
-                except (request.HTTPError, request.URLError, httplib.BadStatusLine, socket.timeout, socket.error, IOError, httplib.IncompleteRead, socks.ProxyConnectionError, socks.SOCKS5Error) as e:
+                except (request.HTTPError, request.URLError, http.client.BadStatusLine, socket.timeout, socket.error, IOError, http.client.IncompleteRead, socks.ProxyConnectionError, socks.SOCKS5Error) as e:
                     repeat = repeat - 1
                     if isinstance(e, request.HTTPError):
                         if e.code in NOT_REQUEST_CODE:
@@ -387,9 +387,9 @@ class LRequest(object):
             response, isdecode, is_xpath = params
             body = ''
             self._body = ''
-            if isinstance(response, urllib.addinfourl):
+            if isinstance(response, http.client.HTTPResponse): # urllib.addinfourl
                 if response.info().get('Content-Encoding') in ('gzip', 'x-gzip'):
-                    body = gzip.GzipFile('', 'r', 0, io.StringIO(response.read())).read()
+                    body = gzip.GzipFile('', 'r', 0, io.BytesIO(response.read())).read().decode("utf-8") # todo
                 else:
                     body = response.read()
 
@@ -407,6 +407,7 @@ class LRequest(object):
             else:
                 self._body = response
 
+            # todo
             self._body = _clean(self._body)
             if is_xpath:
                 # self.tree = Selector(text=str(BeautifulSoup(self.body, 'lxml')))
@@ -529,7 +530,7 @@ if __name__ == '__main__':
 
     # lr.load('http://www.google.com')
     lr.load('http://www.baidu.com')
-    print(lr.body)
+    # print(lr.body)
 
     # import conf, time
     # from bitvise import Bitvise

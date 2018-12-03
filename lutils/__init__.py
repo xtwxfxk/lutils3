@@ -83,7 +83,7 @@ CHUNK_SIZE = 10240
 def read_random_lines(path, amount=5):
 
     results = []
-    if isinstance(path, basestring) and os.path.exists(path):
+    if isinstance(path, str) and os.path.exists(path):
         _length = os.stat(path).st_size
         if _length > 0:
 #            with open(path) as input:
