@@ -9,11 +9,11 @@ import numpy as np
 import pandas as pd
 import tables as tb
 from stockstats import StockDataFrame
-from lstockstats import LStockDataFrame
+from .lstockstats import LStockDataFrame
 
 # pd.set_option('expand_frame_repr', False)
 
-from decorators import *
+from .decorators import *
 
 class LStock():
 

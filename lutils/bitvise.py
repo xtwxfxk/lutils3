@@ -6,7 +6,7 @@ import time
 import socket
 import logging
 import subprocess
-import conf
+from lutils import conf
 from lutils import free_port
 
 

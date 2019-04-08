@@ -5,7 +5,7 @@ import os
 import time
 import random
 import logging
-import urlparse
+from urllib.parse import urlparse
 import json
 import traceback
 import datetime
