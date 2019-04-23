@@ -11,10 +11,7 @@ import codecs
 import logging
 import logging.config
 from bs4 import BeautifulSoup
-if sys.version_info[0] >= 3: # python 3
-    from urllib.parse import urlparse
-else:
-    import urlparse
+from urllib.parse import urlsplit
 
 LUTILS_ROOT = os.path.dirname(__file__)
 
@@ -108,13 +105,14 @@ def read_random_lines(path, amount=5):
 
 
 def get_tld(url):
-    url = "http://www.python.org"
-    domain = urlparse.urlsplit(url)[1].split(':')[0]
-    print("The domain name of the url is: ", domain)
+    # url = "http://www.python.org"
+    domain = urlsplit(url)[1].split(':')[0]
+    # print("The domain name of the url is: ", domain)
+    return domain
 
 
 def _clean(html, remove=['br', 'hr']):
-    html = re.compile('<!--.*?-->', re.DOTALL).sub('', html.decode('utf-8'))  # remove comments
+    html = re.compile('<!--.*?-->', re.DOTALL).sub('', html)  # remove comments
     if remove:
         # XXX combine tag list into single regex, if can match same at start and end
         for tag in remove:

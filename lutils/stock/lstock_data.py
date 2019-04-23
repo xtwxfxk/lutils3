@@ -64,10 +64,8 @@ class LStockData():
             # stock_file = open(f, 'w')
             stock_datas = []
             url = self.start_url % id
-            logger.info('Load Url: %s' % url)
+            # logger.info('Load Url: %s' % url)
             self.lr.load(url)
-
-
 
             _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
             if _start_year < '2004':
@@ -200,7 +198,7 @@ class LStockData():
                 last_year = '1990'
 
                 url = self.start_url % code
-                logger.info('Load Url: %s' % url)
+                # logger.info('Load Url: %s' % url)
                 self.lr.load(url)
 
                 _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
@@ -229,6 +227,7 @@ class LStockData():
 
                             for record in records:
                                 _date = record.xpath('./td[1]/div')[0].text.strip()
+                                # _date = record.xpath('./td[1]/div[1]/text()')[0].strip()
 
                                 detail_url = ''
                                 if not _date:
@@ -424,7 +423,7 @@ if __name__ == '__main__':
     id = '603858'
     start_year = 2007
 
-    ls = LStock()
+    ls = LStockData()
     # for data in ls.search(id, start_year):
     #     print data
 

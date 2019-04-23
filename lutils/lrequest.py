@@ -11,7 +11,6 @@ import threading
 import random
 import gzip
 import datetime
-
 import logging
 import traceback
 
@@ -22,7 +21,8 @@ from urllib import request
 import http.client
 
 #from scrapy.selector import Selector
-from lxml import html
+# from lxml import html
+from lxml import etree
 from bs4 import BeautifulSoup
 from lutils.ClientForm import ParseFile
 from lutils.socksipyhandler import SocksiPyHandler, SocksiPysHandler
@@ -389,7 +389,9 @@ class LRequest(object):
             self._body = ''
             if isinstance(response, http.client.HTTPResponse): # urllib.addinfourl
                 if response.info().get('Content-Encoding') in ('gzip', 'x-gzip'):
-                    body = gzip.GzipFile('', 'r', 0, io.BytesIO(response.read())).read().decode("utf-8") # todo
+                    # body = gzip.GzipFile('', 'r', 0, io.BytesIO(response.read())).read() # .decode('utf-8') # todo
+                    body = gzip.decompress(response.read()) # .decode('utf-8', 'ignore')
+                    # body = str(body)
                 else:
                     body = response.read()
 
@@ -408,11 +410,15 @@ class LRequest(object):
                 self._body = response
 
             # todo
-            self._body = _clean(self._body)
             if is_xpath:
+                self._body = _clean(self._body)
                 # self.tree = Selector(text=str(BeautifulSoup(self.body, 'lxml')))
                 # self.tree = html.fromstring(str(BeautifulSoup(self.body, 'lxml')))
-                self.tree = html.fromstring(self._body)
+                # self.tree = html.fromstring(self._body)
+                # print(self._body)
+                # self.tree = etree.fromstring(self._body)
+                parser = etree.HTMLParser()
+                self.tree = etree.parse(io.StringIO(self._body), parser)
         except :
             raise
         finally:
