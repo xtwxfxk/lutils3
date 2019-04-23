@@ -5,7 +5,7 @@ import os
 import time
 import random
 import logging
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, parse_qs
 import json
 import traceback
 import datetime
@@ -108,7 +108,7 @@ class LStockData():
                                 details = []
                                 if detail_url:
 
-                                    params = urlparse.parse_qs(urlparse.urlparse(detail_url).query, True)
+                                    params = parse_qs(urlparse(detail_url).query, True)
                                     detail_down_url = 'http://market.finance.sina.com.cn/downxls.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
                                     self.lr.load(detail_down_url)
                                     logger.info('Load Detail: %s: %s' % (id, detail_down_url))
@@ -252,7 +252,7 @@ class LStockData():
                                     details = []
                                     if detail_url:
 
-                                        params = urlparse.parse_qs(urlparse.urlparse(detail_url).query, True)
+                                        params = parse_qs(urlparse(detail_url).query, True)
                                         detail_down_url = 'http://market.finance.sina.com.cn/downxls.php?date=%s&symbol=%s' % (
                                         params['date'][0], params['symbol'][0])
 
@@ -329,7 +329,7 @@ class LStockData():
             h5file.close()
 
 def get_all_codes():
-    stock_code_url = 'http://quote.eastmoney.com/stocklist.html' # us: http://quote.eastmoney.com/usstocklist.html
+    stock_code_url = 'http://quote.eastmoney.com/center/gridlist.html' # 'http://quote.eastmoney.com/stocklist.html' # us: http://quote.eastmoney.com/usstocklist.html
     exchanges = ['ss', 'sz', 'hk']
 
     lr = LRequest()
@@ -368,7 +368,7 @@ def get_new_stock_code(year=None):
         stock_codes.append(ele.text.strip())
 
     for ele in lr.xpaths('//div[@class="fn_cm_pages"]//a[contains(@href, "page")]')[:-1]:  # pages
-        u = urlparse.urljoin('http://quotes.money.163.com/data/ipo/shengou.html', ele.attrib['href'])
+        u = urljoin('http://quotes.money.163.com/data/ipo/shengou.html', ele.attrib['href'])
 
         lr.load(u)
         lr.loads(BeautifulSoup(lr.body, 'lxml').prettify())
@@ -400,7 +400,7 @@ def get_codes():
             next_ele = lr.xpath(u'//a[contains(text(), "下一页")]')
             if next_ele is None:
                 break
-            next_url = urlparse.urljoin(url, next_ele.attrib['href'])
+            next_url = urljoin(url, next_ele.attrib['href'])
             # logger.info('Load: %s' % next_url)
             lr.load(next_url)
 

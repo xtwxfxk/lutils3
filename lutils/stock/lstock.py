@@ -7,7 +7,6 @@ import os
 import gc
 import numpy as np
 import pandas as pd
-import tables as tb
 from stockstats import StockDataFrame
 from .lstockstats import LStockDataFrame
 

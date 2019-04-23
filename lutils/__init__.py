@@ -114,7 +114,7 @@ def get_tld(url):
 
 
 def _clean(html, remove=['br', 'hr']):
-    html = re.compile('<!--.*?-->', re.DOTALL).sub('', html)  # remove comments
+    html = re.compile('<!--.*?-->', re.DOTALL).sub('', html.decode('utf-8'))  # remove comments
     if remove:
         # XXX combine tag list into single regex, if can match same at start and end
         for tag in remove:
