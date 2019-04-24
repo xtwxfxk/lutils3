@@ -330,8 +330,11 @@ class LRequest(object):
 
     def load(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], isdecode=False, repeat=3, is_xpath=True):
         try:
-            if self.delay > 0:
+            if isinstance(self.delay, int) and self.delay > 0:
                 time.sleep(self.delay)
+            else if isinstance(self.delay, list) and len(self.delay) == 2:
+                time.sleep(random.randrange(*self.delay))
+                
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
             return self.open(url, data, timeout, append_header, isdecode, repeat, is_xpath)

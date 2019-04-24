@@ -196,12 +196,17 @@ class LStockData():
                     'nature': nature, })
         return details
 
+    def _check_delay(self):
+        if (time.time() - self.t1) > 1800:
+            logger.info('Wait 60 Sec..')
+            time.sleep(60)
+            self.t1 = time.time()
 
     def search_to_h5(self, code, save_path, start_year=2007, mode='a', is_detail=True):
         h5file = tables.open_file(save_path, mode=mode)
 
         end_year = datetime.date.today().year + 1
-
+        self.t1 = time.time()
         try:
 
             if '/stock' not in h5file:
@@ -251,6 +256,7 @@ class LStockData():
             for year in range(start_year, end_year):
                 for quarter in range(quarter, 5):
                     try:
+                        self._check_delay()
                         _url = self.url_format % (code, year, quarter)
                         # logger.info('Load: %s: %s' % (code, _url))
 
@@ -283,6 +289,8 @@ class LStockData():
                                 _id = '%s_%s' % (code, _date)
                                 _date = _date.replace('-', '')
 
+
+
                                 if is_detail:
                                     details = []
                                     if detail_url:
@@ -299,6 +307,7 @@ class LStockData():
                                             pages = json.loads(self.lr.body.split('var detailPages=', 1)[-1].split(';;')[0].replace("'", '"'))[1:]
 
                                             for page in pages:
+                                                self._check_delay()
                                                 # time.sleep(1) # random.randint(1, 5))
                                                 detail_page = '%s&page=%s' % (detail_last_page, page[0])
                                                 self.lr.load(detail_page)
