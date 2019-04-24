@@ -11,25 +11,19 @@ import threading
 import random
 import gzip
 import datetime
-import httplib
+import http.client as httpclient
 import logging
 import requests # requesocks
-from requests.packages.urllib3.contrib.socks import SOCKSHTTPSConnectionPool, SOCKSHTTPConnectionPool
-if sys.version_info[0] >= 3:
-    from http import cookiejar
-    from urllib.parse import urlparse
-    import io, urllib
-else:
-    import urlparse, urllib, urllib2
-    import cookielib as cookiejar
-    from cookielib import Absent, escape_path, request_path, eff_request_host, request_port, Cookie
-    import StringIO as io
+
+from http import cookiejar
+from urllib.parse import urlparse
+import io, urllib
 
 
 #from scrapy.selector import Selector
 from lxml import html
 from bs4 import BeautifulSoup
-from ClientForm import ParseFile
+from .ClientForm import ParseFile
 from lutils.bitvise import Bitvise
 from lutils import read_random_lines, LUTILS_ROOT
 from lutils.lrequest import free_port, getaddrinfo
@@ -86,12 +80,12 @@ class LRequests(object):
         while True:
             try:
 
-                if isinstance(url, basestring):
+                if isinstance(url, str):
                     logger.info('Load URL: %s' % url)
                     response = self.session.request(method, url, data=data, timeout=self.timeout, allow_redirects=True, stream=stream, headers=self.headers) # , stream=stream
             #        response = self.session.get(url, data=data, timeout=self.timeout, stream=stream)
 
-                elif isinstance(url, urllib2.Request):
+                elif isinstance(url, urllib.request.Request):
                     logger.info('Load URL: %s' % url.get_full_url())
 
                     response = self.session.request(url.get_method(), url.get_full_url(), data=url.get_data(), timeout=self.timeout, allow_redirects=True, headers=self.headers)
@@ -99,9 +93,9 @@ class LRequests(object):
                 self.body = response, is_xpath, stream
                 self.current_url = response.url
                 return response
-            except (SOCKSHTTPSConnectionPool, SOCKSHTTPConnectionPool, urllib2.HTTPError, urllib2.URLError, httplib.BadStatusLine, socket.timeout, socket.error, IOError, httplib.IncompleteRead, socks.ProxyConnectionError, socks.SOCKS5Error) as e:
+            except (urllib.error.HTTPError, urllib.error.URLError, httpclient.BadStatusLine, socket.timeout, socket.error, IOError, httpclient.IncompleteRead, socks.ProxyConnectionError, socks.SOCKS5Error) as e:
                 repeat = repeat - 1
-                if isinstance(e, urllib2.HTTPError):
+                if isinstance(e, urllib.error.HTTPError):
                     if e.code in NOT_REQUEST_CODE:
                         raise
                 time.sleep(random.randrange(10, 30))
@@ -162,7 +156,7 @@ class LRequests(object):
             if stream:
                 self._body = response.raw.data
             else:
-                if isinstance(response, basestring):
+                if isinstance(response, str):
                     self._body = response
                 else:
                     self._body = response.text.encode('utf-8')

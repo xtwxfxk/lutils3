@@ -411,6 +411,9 @@ class LRequest(object):
 
             # todo
             if is_xpath:
+                if isinstance(self._body, bytes): # todo
+                    self._body = self._body.decode('ISO-8859-1')
+
                 self._body = _clean(self._body)
                 # self.tree = Selector(text=str(BeautifulSoup(self.body, 'lxml')))
                 # self.tree = html.fromstring(str(BeautifulSoup(self.body, 'lxml')))
