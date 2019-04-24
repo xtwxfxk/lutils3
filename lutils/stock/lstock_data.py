@@ -54,7 +54,7 @@ class LStockData():
         # self.output = output
 
         self.debuglevel = debuglevel
-        self.lr = LRequest()
+        self.lr = LRequest(delay=1)
 
 
 
@@ -160,6 +160,42 @@ class LStockData():
         except :
             raise
 
+    def _fetch_detail(self):
+        details = []
+        if self.lr.body.find('class="datatbl"') > -1:
+            trs = self.lr.xpaths('//table[@class="datatbl"]//tr')[1:]
+            for tr in trs:
+                t = tr.xpath('./th[1]')[0].text.strip()
+                price = tr.xpath('./td[1]')[0].text.strip()
+                _price_change = tr.xpath('./td[2]')[0].text.strip()
+                volume = tr.xpath('./td[3]')[0].text.strip()
+                _turnover = tr.xpath('./td[4]')[0].text.strip()
+                _nature = bytes(''.join(tr.xpath('./th[2]')[0].itertext()).strip(), 'ISO-8859-1').decode('gbk')
+                
+                if _nature == '卖盘':
+                    nature = 'sell'
+                elif _nature == '买盘':
+                    nature = 'buy'
+                elif _nature == '中性盘':
+                    nature = 'neutral_plate'
+                else:
+                    nature = _nature
+
+                price_change = '0.0'
+                if _price_change != '--':
+                    price_change = _price_change
+
+                turnover = _turnover.replace(',', '')
+
+                details.append({
+                    'time': t,
+                    'price': price,
+                    'price_change': price_change,
+                    'volume': volume,
+                    'turnover': turnover,
+                    'nature': nature, })
+        return details
+
 
     def search_to_h5(self, code, save_path, start_year=2007, mode='a', is_detail=True):
         h5file = tables.open_file(save_path, mode=mode)
@@ -218,7 +254,7 @@ class LStockData():
                         _url = self.url_format % (code, year, quarter)
                         # logger.info('Load: %s: %s' % (code, _url))
 
-                        time.sleep(1) # random.randint(1, 5))
+                        # time.sleep(1) # random.randint(1, 5))
                         self.lr.load(_url)
 
                         if self.lr.body.find('FundHoldSharesTable') > -1:
@@ -252,40 +288,23 @@ class LStockData():
                                     if detail_url:
 
                                         params = parse_qs(urlparse(detail_url).query, True)
-                                        detail_down_url = 'http://market.finance.sina.com.cn/downxls.php?date=%s&symbol=%s' % (
-                                        params['date'][0], params['symbol'][0])
+                                        detail_last_page = 'http://market.finance.sina.com.cn/transHis.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
 
-                                        time.sleep(1) # random.randint(1, 5))
-                                        self.lr.load(detail_down_url)
+                                        # time.sleep(1)
+                                        self.lr.load(detail_last_page)
                                         # logger.info('Load Detail: %s: %s' % (code, detail_down_url))
 
-                                        if self.lr.body.find('language="javascript"') < 0:
-                                            for line in self.lr.body.decode('gbk').splitlines()[1:]:
-                                                nature = ''
-                                                try:
-                                                    t, price, _price_change, volume, turnover, _nature = line.strip().split('	')
-                                                except:
-                                                    logger.info(line)
-                                                    raise
-                                                if _nature == u'卖盘':
-                                                    nature = 'sell'
-                                                elif _nature == u'买盘':
-                                                    nature = 'buy'
-                                                elif _nature == u'中性盘':
-                                                    nature = 'neutral_plate'
-                                                else:
-                                                    nature = _nature
+                                        details.extend(self._fetch_detail())
+                                        if self.lr.body.find('var detailPages=') > -1:
+                                            pages = json.loads(self.lr.body.split('var detailPages=', 1)[-1].split(';;')[0].replace("'", '"'))[1:]
 
-                                                price_change = '0.0'
-                                                if _price_change != '--':
-                                                    price_change = _price_change
+                                            for page in pages:
+                                                # time.sleep(1) # random.randint(1, 5))
+                                                detail_page = '%s&page=%s' % (detail_last_page, page[0])
+                                                self.lr.load(detail_page)
 
-                                                details.append({'time': t,
-                                                                'price': price,
-                                                                'price_change': price_change,
-                                                                'volume': volume,
-                                                                'turnover': turnover,
-                                                                'nature': nature, })
+                                                details.extend(self._fetch_detail())
+
 
 
                                     details.reverse()
@@ -293,7 +312,7 @@ class LStockData():
                                         # detail['id'] = _id
                                         detail['date'] = _date
                                         detail['time'] = d['time']
-                                        detail['price'] = d['price'].split(u'\u0000', 1)[0] if d['price'] else 0.0
+                                        detail['price'] = d['price'] # d['price'].split(u'\u0000', 1)[0] if d['price'] else 0.0
                                         detail['price_change'] = d['price_change']
                                         detail['volume'] = d['volume']
                                         detail['turnover'] = d['turnover']

@@ -184,7 +184,7 @@ class LRequest(object):
 
     current_url = ''
 
-    def __init__(self, string_proxy=None, request_header=None, timeout=90, debuglevel=0, **kwargs):
+    def __init__(self, string_proxy=None, request_header=None, timeout=90, delay=0, debuglevel=0, **kwargs):
         self.debuglevel = debuglevel
         if self.debuglevel > 0:
             logger.info('%s: %s %s: begin init' % (datetime.datetime.now().isoformat(), os.getpid(), id(self)))
@@ -195,6 +195,7 @@ class LRequest(object):
         self._body = ''
         self._opener = None
         self.tree = None
+        self.delay = delay
 
         if string_proxy:
             socket.getaddrinfo = getaddrinfo
@@ -329,6 +330,8 @@ class LRequest(object):
 
     def load(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], isdecode=False, repeat=3, is_xpath=True):
         try:
+            if self.delay > 0:
+                time.sleep(self.delay)
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
             return self.open(url, data, timeout, append_header, isdecode, repeat, is_xpath)
