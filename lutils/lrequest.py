@@ -332,9 +332,9 @@ class LRequest(object):
         try:
             if isinstance(self.delay, int) and self.delay > 0:
                 time.sleep(self.delay)
-            else if isinstance(self.delay, list) and len(self.delay) == 2:
+            elif isinstance(self.delay, list) and len(self.delay) == 2:
                 time.sleep(random.randrange(*self.delay))
-                
+
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
             return self.open(url, data, timeout, append_header, isdecode, repeat, is_xpath)

@@ -341,6 +341,8 @@ class LStockData():
 
                                 stock.append()
 
+                                h5file.flush()
+
                     except:
                         raise
 
