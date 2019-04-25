@@ -241,7 +241,6 @@ class LStockData():
                                 stock.append()
 
                                 h5file.flush()
-
                     except:
                         raise
 
@@ -249,7 +248,8 @@ class LStockData():
             # stock_table.flush()
             h5file.flush()
         except:
-            # logger.error(traceback.format_exc())
+            logger.error(traceback.format_exc())
+            open('tmp/last.html', 'w').write(lr.body)
             raise
         finally:
             h5file.flush()
