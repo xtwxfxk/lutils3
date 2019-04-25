@@ -13,7 +13,10 @@ import tables
 import pandas as pd
 from tables import *
 from bs4 import BeautifulSoup
-from ..lrequest import LRequest
+
+from diskcache import Cache
+
+from lutils.lrequest import LRequest
 
 logger = logging.getLogger('lutils')
 
@@ -47,118 +50,19 @@ class LStockData():
 
     real_time_date_url = 'http://hq2fls.eastmoney.com/EM_Quote2010PictureApplication/Flash.aspx?Type=CR&ID=6035771&r=0.8572017126716673'
 
-    def __init__(self, debuglevel=0): #, input, output, **kwargs):
+    def __init__(self, cache_path='tmp/cache', debuglevel=0): #, input, output, **kwargs):
         # threading.Thread.__init__(self)
 
         # self.input = input
         # self.output = output
-
+        self.cache = Cache(cache_path)
         self.debuglevel = debuglevel
         self.lr = LRequest(delay=1)
 
+    
 
 
-    def search(self, id, start_year=2007):
-        try:
-            # f = os.path.join(SAVE_BASE_PATH, '%s.txt' % id)
-            # stock_file = open(f, 'w')
-            stock_datas = []
-            url = self.start_url % id
-            # logger.info('Load Url: %s' % url)
-            self.lr.load(url)
 
-            _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
-            if _start_year < '2004':
-                _start_year = '2004'
-            _start_year = int(_start_year)
-            if start_year < _start_year:
-                start_year = _start_year
-
-            for year in range(start_year, 2017):
-                for jidu in range(1, 5):
-                    try:
-                        _url = self.url_format % (id, year, jidu)
-                        logger.info('Load: %s: %s' % (id, _url))
-                        self.lr.load(_url)
-
-                        if self.lr.body.find('FundHoldSharesTable') > -1:
-                            records = list(self.lr.xpaths('//table[@id="FundHoldSharesTable"]/tr')[1:])
-                            records.reverse()
-
-                            for record in records:
-                                _date = record.xpath('./td[1]/div')[0].text.strip()
-
-                                detail_url = ''
-                                if not _date:
-                                    _date = record.xpath('./td[1]/div/a')[0].text.strip()
-                                    detail_url = record.xpath('./td[1]/div/a')[0].attrib['href'].strip()
-
-                                _opening_price = record.xpath('./td[2]/div')[0].text.strip()
-                                _highest_price = record.xpath('./td[3]/div')[0].text.strip()
-                                _closing_price = record.xpath('./td[4]/div')[0].text.strip()
-                                _floor_price = record.xpath('./td[5]/div')[0].text.strip()
-                                _trading_volume = record.xpath('./td[6]/div')[0].text.strip()
-                                _transaction_amount = record.xpath('./td[7]/div')[0].text.strip()
-
-
-                                _id = '%s_%s' % (id, _date)
-
-                                details = []
-                                if detail_url:
-
-                                    params = parse_qs(urlparse(detail_url).query, True)
-                                    detail_down_url = 'http://market.finance.sina.com.cn/downxls.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
-                                    self.lr.load(detail_down_url)
-                                    logger.info('Load Detail: %s: %s' % (id, detail_down_url))
-
-                                    if self.lr.body.find('language="javascript"') < 0:
-                                        for line in self.lr.body.decode('gbk').splitlines()[1:]:
-                                            nature = ''
-                                            try:
-                                                t, price, _price_change, volume, turnover, _nature = line.strip().split('	')
-                                            except :
-                                                logger.info(line)
-                                                raise
-                                            if _nature == u'卖盘':
-                                                nature = 'sell'
-                                            elif _nature == u'买盘':
-                                                nature = 'buy'
-                                            elif _nature == u'中性盘':
-                                                nature = 'neutral_plate'
-                                            else:
-                                                nature = _nature
-
-                                            price_change = '0.0'
-                                            if _price_change != '--':
-                                                price_change = _price_change
-
-
-                                            details.append({'time': t,
-                                                            'price': price,
-                                                            'price_change': price_change,
-                                                            'volume': volume,
-                                                            'turnover': turnover,
-                                                            'nature': nature,})
-
-
-                                # self.stocks.put(_id, {'stock:opening_price': _opening_price,
-                                #                       'stock:highest_price': _highest_price,
-                                #                       'stock:closing_price': _closing_price,
-                                #                       'stock:floor_price': _floor_price,
-                                #                       'stock:trading_volume': _trading_volume,
-                                #                       'stock:transaction_amount': _transaction_amount,
-                                #                       'stock:details': json.dumps(details)})
-
-                                # stock_file.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (_id, _opening_price, _highest_price, _closing_price, _floor_price, _trading_volume, _transaction_amount, json.dumps(details)))
-
-                                stock_datas.append((_id, _opening_price, _closing_price, _highest_price, _floor_price, _trading_volume, _transaction_amount, details))
-                    except :
-                        raise
-
-            # stock_file.close()
-            return stock_datas
-        except :
-            raise
 
     def _fetch_detail(self):
         details = []
@@ -341,8 +245,6 @@ class LStockData():
 
                                 stock.append()
 
-                                h5file.flush()
-
                     except:
                         raise
 
@@ -356,6 +258,18 @@ class LStockData():
         finally:
             h5file.flush()
             h5file.close()
+
+    def fetch_codes(self):
+        codes = get_codes()
+        for code in codes:
+            if code not in self.cache:
+                self.cache[code] = None
+                logger.info('Append Code: %s' % code)
+
+    def fetch_all(self, save_root, start_year=2007, mode='a', is_detail=True):
+        for code in self.cache.iterkeys():
+            self.search_to_h5(code, os.path.join(save_root, '%s.h5' % code), start_year, mode, is_detail)
+
 
 def get_all_codes():
     stock_code_url = 'http://quote.eastmoney.com/center/gridlist.html' # 'http://quote.eastmoney.com/stocklist.html' # us: http://quote.eastmoney.com/usstocklist.html
@@ -417,8 +331,7 @@ def get_codes():
     lr = LRequest()
     for url in urls:
         # logger.info('Load: %s' % url)
-        lr.load(url)
-
+        lr.load(url, isdecode=True)
 
         while 1:
             for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
@@ -431,9 +344,13 @@ def get_codes():
                 break
             next_url = urljoin(url, next_ele.attrib['href'])
             # logger.info('Load: %s' % next_url)
-            lr.load(next_url)
+            lr.load(next_url, isdecode=True)
 
     return codes
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -450,11 +367,20 @@ if __name__ == '__main__':
     # for a in lr.xpaths('//div[@id="quotesearch"]//li/a[@target="_blank"]'):
     #     print a.text
 
-    id = '603858'
-    start_year = 2007
+    # id = '603858'
+    # start_year = 2007
 
+    # ls = LStockData()
+    # # for data in ls.search(id, start_year):
+    # #     print data
+
+    # ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
+    
     ls = LStockData()
     # for data in ls.search(id, start_year):
     #     print data
 
-    ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
+    # ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
+
+    ls.fetch_codes()
+    ls.fetch_all('F:\\xx', start_year=2017)
