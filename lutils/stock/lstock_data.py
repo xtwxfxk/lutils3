@@ -59,11 +59,6 @@ class LStockData():
         self.debuglevel = debuglevel
         self.lr = LRequest(delay=1)
 
-    
-
-
-
-
     def _fetch_detail(self):
         details = []
         if self.lr.body.find('class="datatbl"') > -1:
@@ -245,9 +240,10 @@ class LStockData():
 
                                 stock.append()
 
+                                h5file.flush()
+
                     except:
                         raise
-
 
                 quarter = 1
             # stock_table.flush()
