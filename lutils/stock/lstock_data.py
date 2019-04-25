@@ -249,7 +249,7 @@ class LStockData():
             h5file.flush()
         except:
             logger.error(traceback.format_exc())
-            open('tmp/last.html', 'w').write(lr.body)
+            open('tmp/last.html', 'w').write(self.lr.body)
             raise
         finally:
             h5file.flush()
