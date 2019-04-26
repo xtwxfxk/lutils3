@@ -439,7 +439,7 @@ if __name__ == '__main__':
 
     # ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
     
-    ls = LStockLoader(save_root='F:\\xx', delay=.8, start_year=2017)
+    # ls = LStockLoader(save_root='F:\\xx', delay=.8, start_year=2017)
 
     # ls = LStockData(delay=.5)
     # for data in ls.search(id, start_year):
@@ -450,4 +450,8 @@ if __name__ == '__main__':
     # ls.fetch_codes()
     # ls.fetch_all()
 
-    ls.fetch_all_future(max_workers=3)
+    # ls.fetch_all_future(max_workers=3)
+
+    ls = LStockLoader(save_root='F:\\xx', delay=1, start_year=2017)
+    ls.fetch_codes()
+    ls.fetch_all_future(max_workers=1)
