@@ -454,7 +454,7 @@ class LRequest(object):
 #        return self.tree.css(css)
 
     def get_ele_text(self, ele):
-        return "".join([x for x in ele.itertext()]).strip()
+        return "".join(ele.itertext()).strip()
 
     # def _clean(self, html, remove=['br', 'hr']):
     #     self.remove = remove

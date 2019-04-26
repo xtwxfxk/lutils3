@@ -5,6 +5,7 @@ import os
 import time
 import random
 import logging
+import functools
 from urllib.parse import urlparse, urljoin, parse_qs
 import json
 import traceback
@@ -13,10 +14,11 @@ import tables
 import pandas as pd
 from tables import *
 from bs4 import BeautifulSoup
-
+import urllib.error as urlliberror
 from diskcache import Cache
 
 from lutils.lrequest import LRequest
+from lutils.futures.thread import LThreadPoolExecutor
 
 logger = logging.getLogger('lutils')
 
@@ -43,6 +45,35 @@ class StockDetails(IsDescription):
     turnover        = Int64Col(pos=6)
     nature          = StringCol(20, pos=7)
 
+
+def try_except_response(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        while 1:
+            try:
+                return func(self, *args, **kwargs)
+            except urlliberror.HTTPError as e:
+                if e.code == 456:
+                    logger.error('Access Denied!!! Try again after 60 Sec.')
+                    time.sleep(60)
+    return wrapper
+
+def try_request_count(wait_count=50):
+    def _request_count(func):
+        @try_except_response
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self.count += 1
+            if self.count > wait_count:
+                t = random.randrange(10, 30)
+                logger.info('Request Fast wait %s Sec.' % t)
+                time.sleep(t)
+                self.count = 0
+            return func(self, *args, **kwargs)
+
+        return wrapper
+    return _request_count
+
 class LStockData():
 
     start_url = 'http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/%s.phtml'
@@ -50,14 +81,15 @@ class LStockData():
 
     real_time_date_url = 'http://hq2fls.eastmoney.com/EM_Quote2010PictureApplication/Flash.aspx?Type=CR&ID=6035771&r=0.8572017126716673'
 
-    def __init__(self, cache_path='tmp/cache', debuglevel=0): #, input, output, **kwargs):
+    def __init__(self, delay=0.0, debuglevel=0): #, input, output, **kwargs):
         # threading.Thread.__init__(self)
 
         # self.input = input
         # self.output = output
-        self.cache = Cache(cache_path)
+        
+        self.count = 0
         self.debuglevel = debuglevel
-        self.lr = LRequest(delay=1)
+        self.lr = LRequest(delay=delay)
 
     def _fetch_detail(self):
         details = []
@@ -101,6 +133,13 @@ class LStockData():
             time.sleep(60)
             self.t1 = time.time()
 
+    
+    # @try_request_count(wait_count=50)
+    @try_except_response
+    def load(self, url):
+
+        return self.lr.load(url)
+
     def search_to_h5(self, code, save_path, start_year=2007, mode='a', is_detail=True):
         h5file = tables.open_file(save_path, mode=mode)
 
@@ -139,7 +178,7 @@ class LStockData():
 
                 url = self.start_url % code
                 # logger.info('Load Url: %s' % url)
-                self.lr.load(url)
+                self.load(url)
 
                 _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
                 # if _start_year < '2007':
@@ -160,7 +199,7 @@ class LStockData():
                         # logger.info('Load: %s: %s' % (code, _url))
 
                         # time.sleep(1) # random.randint(1, 5))
-                        self.lr.load(_url)
+                        self.load(_url)
 
                         if self.lr.body.find('FundHoldSharesTable') > -1:
                             records = list(self.lr.xpaths('//table[@id="FundHoldSharesTable"]//tr')[2:])
@@ -198,7 +237,7 @@ class LStockData():
                                         detail_last_page = 'http://market.finance.sina.com.cn/transHis.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
 
                                         # time.sleep(1)
-                                        self.lr.load(detail_last_page)
+                                        self.load(detail_last_page)
                                         # logger.info('Load Detail: %s: %s' % (code, detail_down_url))
 
                                         details.extend(self._fetch_detail())
@@ -209,7 +248,7 @@ class LStockData():
                                                 self._check_delay()
                                                 # time.sleep(1) # random.randint(1, 5))
                                                 detail_page = '%s&page=%s' % (detail_last_page, page[0])
-                                                self.lr.load(detail_page)
+                                                self.load(detail_page)
 
                                                 details.extend(self._fetch_detail())
 
@@ -255,6 +294,22 @@ class LStockData():
             h5file.flush()
             h5file.close()
 
+    
+
+
+class LStockLoader():
+
+    def __init__(self, save_root, cache_path='tmp/cache', delay=.0, start_year=2007, mode='a', is_detail=True):
+        self.save_root = save_root
+        
+        self.cache = Cache(cache_path)
+
+        self.delay = delay
+        self.start_year = start_year
+        self.mode = mode
+        self.is_detail = is_detail
+
+
     def fetch_codes(self):
         codes = get_codes()
         for code in codes:
@@ -262,9 +317,21 @@ class LStockData():
                 self.cache[code] = None
                 logger.info('Append Code: %s' % code)
 
-    def fetch_all(self, save_root, start_year=2007, mode='a', is_detail=True):
+    def fetch_code(self, code):
+        lstockData = LStockData(delay=self.delay)
+        lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
+
+
+    def fetch_all(self):
+        lstockData = LStockData(delay=self.delay)
         for code in self.cache.iterkeys():
-            self.search_to_h5(code, os.path.join(save_root, '%s.h5' % code), start_year, mode, is_detail)
+            lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
+
+    def fetch_all_future(self, max_workers=10):
+        with LThreadPoolExecutor(max_workers=max_workers) as future:
+            for code in self.cache.iterkeys():
+                future.submit(self.fetch_code, code)
+
 
 
 def get_all_codes():
@@ -372,11 +439,15 @@ if __name__ == '__main__':
 
     # ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
     
-    ls = LStockData()
+    ls = LStockLoader(save_root='F:\\xx', delay=.8, start_year=2017)
+
+    # ls = LStockData(delay=.5)
     # for data in ls.search(id, start_year):
     #     print data
 
     # ls.search_to_h5(id, 'F:\\002108.h5') # , start_year)
 
-    ls.fetch_codes()
-    ls.fetch_all('F:\\xx', start_year=2017)
+    # ls.fetch_codes()
+    # ls.fetch_all()
+
+    ls.fetch_all_future(max_workers=3)
