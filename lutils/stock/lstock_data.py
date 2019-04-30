@@ -56,6 +56,8 @@ def try_except_response(func):
                 if e.code == 456:
                     logger.error('Access Denied!!! Try again after 60 Sec.')
                     time.sleep(60)
+				else:
+					raise
     return wrapper
 
 def try_request_count(wait_count=50):
@@ -66,7 +68,7 @@ def try_request_count(wait_count=50):
             self.count += 1
             if self.count > wait_count:
                 t = random.randrange(10, 30)
-                logger.info('Request Fast wait %s Sec.' % t)
+                logger.info('Request too fast. Wait %s Sec.' % t)
                 time.sleep(t)
                 self.count = 0
             return func(self, *args, **kwargs)
