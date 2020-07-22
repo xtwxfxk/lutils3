@@ -337,18 +337,7 @@ class BrowserMixin(object):
     def screenshot_eles(self, xpaths):
         ims = []
         eles = self.xpaths(xpaths)
-        # screen_png = Image.open(BytesIO(self.get_screenshot_as_png()))
-        # ims.append(screen_png)
         for ele in eles:
-            # location = ele.location
-            # size = ele.size
-
-            # left = location['x']
-            # top = location['y']
-            # right = location['x'] + size['width']
-            # bottom = location['y'] + size['height']
-            # im = screen_png.crop((left, top, right, bottom))
-
             ims.append(Image.open(BytesIO(ele.screenshot_as_png)))
             
         return ims
