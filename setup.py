@@ -47,7 +47,7 @@ setup(
     long_description=README,
     license="BSD",
     keywords="lutils",
-    url="https://github.com/xtwxfxk/lutils",
+    url="https://github.com/xtwxfxk/lutils3",
     packages=packages,
     package_data = package_data,
     platforms=['any'],

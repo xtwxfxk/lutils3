@@ -59,7 +59,7 @@ class GoogleSearch(object):
                             'lang' : self._lang,
                             'filter': self._filter}
 
-        print safe_url
+        print(safe_url)
         self.lr.load(safe_url)
 
         results = []
@@ -73,7 +73,7 @@ class GoogleSearch(object):
 
             results.append(result)
 
-        print i
+        print(i)
 
         return results
 
@@ -90,9 +90,9 @@ if __name__ == '__main__':
 
     results = g.get_result()
     for r in results:
-        print r
+        print(r)
 
-#    print results
+#    print(results)
 
     open('D:\\code\\python\\xxx.html', 'w').write(g.lr.body)
 
@@ -107,6 +107,6 @@ if __name__ == '__main__':
 #        result['description'] = ''.join(r.xpath('./div//span[@class="st"]//text()'))
 #        result['url'] = ''.join(r.xpath('./div/h3/a/@href'))
 #
-#        print result
+#        print(result)
 
 

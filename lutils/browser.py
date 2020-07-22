@@ -12,11 +12,11 @@ import socket
 import tempfile
 import zipfile
 import logging
-import urlparse
+from urllib.parse import urlparse
 import random
 import traceback
-import cPickle
-import urllib2
+import pickle
+from urllib import request
 import lxml
 import functools
 from lxml import html
@@ -77,9 +77,10 @@ class LFirefoxProfile(firefox_profile.FirefoxProfile):
         self.userPrefs = os.path.join(self.profile_dir, "user.js")
 
         _ext_path = os.path.join(os.path.dirname(__file__), 'ext')
-        addons = [os.path.join(_ext_path, a) for a in os.listdir(_ext_path)]
-        for addon in addons:
-            self.add_extension(addon)
+        if os.path.exists(_ext_path):
+            addons = [os.path.join(_ext_path, a) for a in os.listdir(_ext_path)]
+            for addon in addons:
+                self.add_extension(addon)
 
         # super(LFirefoxProfile, self).__init__(profile_directory=profile_directory)
 
@@ -275,11 +276,11 @@ class BrowserMixin(object):
 
     def click_xpaths(self, xpath, num=-1):
         _eles = []
-        if isinstance(xpath, basestring):
-            _eles = self.browser.xpaths(xpath)
+        if isinstance(xpath, str):
+            _eles = self.xpaths(xpath)
         elif isinstance(xpath, list):
             for _x in xpath:
-                _eles.extend(self.browser.xpaths(xpath))
+                _eles.extend(self.xpaths(xpath))
 
         if len(_eles) > 0:
             if num != -1:
@@ -322,7 +323,7 @@ class BrowserMixin(object):
         time.sleep(self.wait_time)
 
     def save_exe(self, exe_path):
-        cPickle.dump({'command_executor': self.command_executor._url, 'session_id': self.session_id}, open(exe_path, 'wb'))
+        pickle.dump({'command_executor': self.command_executor._url, 'session_id': self.session_id}, open(exe_path, 'wb'))
 
     def ele_xpath(self, element, xpath, ignore=False):
         try:
@@ -342,10 +343,10 @@ class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
 
         if exe_path is not None and os.path.exists(exe_path):
             try:
-                e = cPickle.load(open(exe_path, 'rb'))
+                e = pickle.load(open(exe_path, 'rb'))
                 webdriver.Remote.__init__(self, command_executor=e['command_executor'], desired_capabilities={})
                 self.session_id = e['session_id']
-            except urllib2.URLError:
+            except request.URLError:
                 self._init_instance(firefox_profile=firefox_profile, firefox_binary=firefox_binary, string_proxy=string_proxy, timeout=timeout, capabilities=capabilities, proxy=proxy, profile_preferences=profile_preferences, **kwargs)
         else:
 
@@ -418,7 +419,7 @@ class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
 # class BrowserRemote(webdriver.Remote, BrowserMixin):
 #
 #     def __init__(self, exe_path=None):
-#         e = cPickle.load(open(exe_path, 'rb'))
+#         e = pickle.load(open(exe_path, 'rb'))
 #         webdriver.Remote.__init__(self, command_executor=e['command_executor'], desired_capabilities={})
 #         self.session_id = e['session_id']
 
