@@ -19,7 +19,9 @@ import pickle
 from urllib import request
 import lxml
 import functools
+from io import BytesIO
 from lxml import html
+from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -331,6 +333,28 @@ class BrowserMixin(object):
         except NoSuchElementException as e:
             if ignore: return None
             else: raise NoSuchElementException(xpath)
+
+    def screenshot_eles(self, xpaths):
+        ims = []
+        eles = self.xpaths(xpaths)
+        # screen_png = Image.open(BytesIO(self.get_screenshot_as_png()))
+        # ims.append(screen_png)
+        for ele in eles:
+            # location = ele.location
+            # size = ele.size
+
+            # left = location['x']
+            # top = location['y']
+            # right = location['x'] + size['width']
+            # bottom = location['y'] + size['height']
+            # im = screen_png.crop((left, top, right, bottom))
+
+            ims.append(Image.open(BytesIO(ele.screenshot_as_png)))
+            
+        return ims
+
+
+
 
 class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
 

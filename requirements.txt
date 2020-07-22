@@ -6,3 +6,4 @@ pandas
 tables
 stockstats
 diskcache
+pillow
