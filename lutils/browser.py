@@ -519,3 +519,7 @@ if __name__ == '__main__':
     b.load('http://www.baidu.com')
     print(b.page_source)
 
+    # ######
+    # b = Browser(string_proxy='socks5://127.0.0.1:1080')
+    # b.execute_script('arguments[0].setAttribute("style", "color: transparent;text-shadow: #111 0 0 5px;")', ele)
+
