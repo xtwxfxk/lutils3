@@ -178,12 +178,12 @@ class BrowserMixin(object):
             time.sleep(self.wait_time)
         else: raise NoSuchElementException('%s Element Not Found' % name_a)
 
-    def find_ids(self, id, ignore=False):
-        try:
-            return self.find_elements_by_id(id)
-        except NoSuchElementException as e:
-            if ignore: return []
-            else: raise NoSuchElementException(id)
+    # def find_ids(self, id, ignore=False):
+    #     try:
+    #         return self.find_elements_by_id(id)
+    #     except NoSuchElementException as e:
+    #         if ignore: return []
+    #         else: raise NoSuchElementException(id)
 
     def find_id(self, id, ignore=False):
         try:
