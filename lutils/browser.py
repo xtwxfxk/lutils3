@@ -28,7 +28,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.webdriver.firefox import firefox_profile
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.firefox.extension_connection import ExtensionConnection
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -52,37 +54,64 @@ except ImportError:
 
 logger = logging.getLogger('lutils')
 
-class LFirefoxProfile(firefox_profile.FirefoxProfile):
+class LFirefoxProfile(FirefoxProfile):
 
     def __init__(self, profile_directory=None): #, is_temp=False):
         # self.is_temp = is_temp
-        if not firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES:
-            with open(os.path.join(os.path.dirname(firefox_profile.__file__), firefox_profile.WEBDRIVER_PREFERENCES)) as default_prefs:
-                firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES = json.load(default_prefs)
+        # if not firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES:
+        #     with open(os.path.join(os.path.dirname(firefox_profile.__file__), firefox_profile.WEBDRIVER_PREFERENCES)) as default_prefs:
+        #         firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES = json.load(default_prefs)
+
+        # self.default_preferences = copy.deepcopy(
+        #     firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES['mutable'])
+        # self.native_events_enabled = True
+        # self.profile_dir = profile_directory
+        # self.tempfolder = None
+        # if self.profile_dir is None:
+        #     self.profile_dir = self._create_tempfolder()
+        # else: # is_temp:
+        #     if not  os.path.exists((self.profile_dir)):
+        #         os.makedirs(self.profile_dir)
+        #     self.tempfolder = tempfile.mkdtemp()
+        #     newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
+        #     shutil.copytree(self.profile_dir, newprof,
+        #         ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
+        #     self.profile_dir = newprof
+        #     self._read_existing_userjs(os.path.join(self.profile_dir, "user.js"))
+
+        # self.extensionsDir = os.path.join(self.profile_dir, "extensions")
+        # self.userPrefs = os.path.join(self.profile_dir, "user.js")
+
+        # _ext_path = os.path.join(os.path.dirname(__file__), 'ext')
+        # if os.path.exists(_ext_path):
+        #     addons = [os.path.join(_ext_path, a) for a in os.listdir(_ext_path)]
+        #     for addon in addons:
+        #         self.add_extension(addon)
+
+        if not FirefoxProfile.DEFAULT_PREFERENCES:
+            with open(os.path.join(os.path.dirname(__file__),
+                                   WEBDRIVER_PREFERENCES)) as default_prefs:
+                FirefoxProfile.DEFAULT_PREFERENCES = json.load(default_prefs)
 
         self.default_preferences = copy.deepcopy(
-            firefox_profile.FirefoxProfile.DEFAULT_PREFERENCES['mutable'])
+            FirefoxProfile.DEFAULT_PREFERENCES['mutable'])
         self.native_events_enabled = True
         self.profile_dir = profile_directory
         self.tempfolder = None
         if self.profile_dir is None:
             self.profile_dir = self._create_tempfolder()
-        else: # is_temp:
+        else:
             self.tempfolder = tempfile.mkdtemp()
             newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
             shutil.copytree(self.profile_dir, newprof,
-                ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
+                            ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
             self.profile_dir = newprof
+            os.chmod(self.profile_dir, 0o755)
             self._read_existing_userjs(os.path.join(self.profile_dir, "user.js"))
-
         self.extensionsDir = os.path.join(self.profile_dir, "extensions")
         self.userPrefs = os.path.join(self.profile_dir, "user.js")
-
-        _ext_path = os.path.join(os.path.dirname(__file__), 'ext')
-        if os.path.exists(_ext_path):
-            addons = [os.path.join(_ext_path, a) for a in os.listdir(_ext_path)]
-            for addon in addons:
-                self.add_extension(addon)
+        if os.path.isfile(self.userPrefs):
+            os.chmod(self.userPrefs, 0o644)
 
         # super(LFirefoxProfile, self).__init__(profile_directory=profile_directory)
 
@@ -373,8 +402,29 @@ class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
         self._html = ''
 
     def _init_instance(self, firefox_profile=None, firefox_binary=None, string_proxy=None, timeout=180, capabilities=None, proxy=None, profile_preferences={}, **kwargs):
+
+        options = Options()
         if firefox_profile is None:
-            firefox_profile = LFirefoxProfile(profile_directory=kwargs.get('profile_directory', None)) #, is_temp=kwargs.get('is_temp', False))
+            # firefox_profile = LFirefoxProfile(profile_directory=kwargs.get('profile_directory', None)) #, is_temp=kwargs.get('is_temp', False))
+            if not os.path.exists(kwargs.get('profile_directory')):
+                os.makedirs(kwargs.get('profile_directory'))
+            # firefox_profile = FirefoxProfile(kwargs.get('profile_directory'))
+            firefox_profile = webdriver.FirefoxProfile()
+
+            # options.add_argument('-profile')
+            # options.add_argument(kwargs.get('profile_directory'))
+            
+
+            # options.add_argument('-P')
+            # options.add_argument('googlexx')
+            # options.profile = firefox_profile
+
+
+
+        # firefox_capabilities = DesiredCapabilities.FIREFOX
+        # firefox_capabilities['marionette'] = True
+
+        firefox_profile.set_preference('webdriver.firefox.profile', 'googlexx')
 
         firefox_profile.set_preference('browser.cache.disk.capacity', 131072)
         firefox_profile.set_preference('browser.cache.disk.smart_size.enabled', False)
@@ -384,12 +434,12 @@ class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
         firefox_profile.set_preference('datareporting.healthreport.uploadEnabled', False)
         firefox_profile.set_preference('datareporting.healthreport.service.firstRun', False)
 
-        firefox_profile.set_preference('webdriver.firefox.profile', 'D:\\profiles\\xx')
+        # firefox_profile.set_preference('webdriver.firefox.profile', 'D:\\profiles\\xx')
 
 
         firefox_profile.set_preference('network.proxy.type', 0)
         if string_proxy:
-            urlinfo = urlparse.urlparse(string_proxy)
+            urlinfo = urlparse(string_proxy)
 
             if urlinfo.scheme == 'ssh':
                 # forwarding_ip = socket.gethostbyname(socket.gethostname())
@@ -420,7 +470,7 @@ class Browser(webdriver.Firefox, webdriver.Remote, BrowserMixin):
         # if sys.platform == 'win32':
         #     executable_path = os.path.join(conf.GECKODRIVER_HOME, 'geckodriver.exe')
         # else:
-        #     executable_path = os.path.join(conf.GECKODRIVER_HOME, 'geckodriver')
+        #     executable_path = os.path.join(conf.GECKODRIVER_HOME, 'geckodriver')                     options=options 
         webdriver.Firefox.__init__(self, firefox_profile=firefox_profile, firefox_binary=firefox_binary, timeout=timeout, capabilities=capabilities, proxy=None) #, executable_path=executable_path)
 
         self.set_page_load_timeout(self.timeout)
@@ -465,7 +515,7 @@ class BrowserPhantomJS(webdriver.PhantomJS, BrowserMixin):
         desired_capabilities.update(_desired_capabilities)
 
         if string_proxy:
-            urlinfo = urlparse.urlparse(string_proxy)
+            urlinfo = urlparse(string_proxy)
             if urlinfo.scheme == 'socks5':
                 service_args=[
                     '--proxy=%s:%s' % (urlinfo.hostname, urlinfo.port),
