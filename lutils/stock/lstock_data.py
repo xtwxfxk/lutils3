@@ -85,13 +85,14 @@ class LStockData():
 
     real_time_date_url = 'http://hq2fls.eastmoney.com/EM_Quote2010PictureApplication/Flash.aspx?Type=CR&ID=6035771&r=0.8572017126716673'
 
-    def __init__(self, delay=0.0, debuglevel=0): #, input, output, **kwargs):
+    def __init__(self, delay=0.0, cache=None, debuglevel=0): #, input, output, **kwargs):
         # threading.Thread.__init__(self)
 
         # self.input = input
         # self.output = output
         
         self.count = 0
+        self.cache = cache
         self.debuglevel = debuglevel
         self.lr = LRequest(delay=delay)
 
@@ -396,12 +397,12 @@ class LStockLoader():
                 logger.info('Append Code: %s' % code)
 
     def fetch_code(self, code):
-        lstockData = LStockData(delay=self.delay)
+        lstockData = LStockData(delay=self.delay, self.cache)
         lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
 
 
     def fetch_all(self):
-        lstockData = LStockData(delay=self.delay)
+        lstockData = LStockData(delay=self.delay, self.cache)
         for code in self.cache.iterkeys():
             lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
 
