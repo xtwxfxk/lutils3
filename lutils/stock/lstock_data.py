@@ -388,7 +388,7 @@ def get_new_stock_code(year=None):
     return stock_codes
 
 
-def get_codes(delay=.0):
+def get_codes(delay=.0): # 20200810: need delay 4s
     codes = []
     urls = ['http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc',
             'http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc']
