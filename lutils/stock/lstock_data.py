@@ -23,6 +23,8 @@ from lutils.futures.thread import LThreadPoolExecutor
 logger = logging.getLogger('lutils')
 
 
+exchange_codes = {'sa': 'sz', 'ha': 'hs'}
+
 class Stocks(IsDescription):
     # id         = StringCol(20, pos=1)
     date       = Int64Col(pos=1)
@@ -145,6 +147,9 @@ class LStockData():
     def search_to_h5(self, code, save_path, start_year=2007, mode='a', is_detail=True):
         h5file = tables.open_file(save_path, mode=mode)
 
+        exchange_code = exchange_codes.get(self.cache.get(code, None), None)
+        k_line_mins = [5, 15, 30, 60]
+
         end_year = datetime.date.today().year + 1
         self.t1 = time.time()
         try:
@@ -166,127 +171,133 @@ class LStockData():
                 detail_table = h5file.get_node('/stock/details')
             detail = detail_table.row
 
-            h5file.flush()
+            ####################################
+            #
+            # 20200810 server disable
+            #
+            ####################################
+            # if stock_table.nrows > 0:
+            #     last_data = stock_table[-1]
+            #     last_date = str(last_data[0]).split('_')[-1]
+            #     last_date = '%s-%s-%s' % (last_date[0:4], last_date[4:6], last_date[6:8])
+            #     start_year = last_date.split('-')[0]
 
-            if stock_table.nrows > 0:
-                last_data = stock_table[-1]
-                last_date = str(last_data[0]).split('_')[-1]
-                last_date = '%s-%s-%s' % (last_date[0:4], last_date[4:6], last_date[6:8])
-                start_year = last_date.split('-')[0]
+            # else:
+            #     last_date = '1990-01-01'
+            #     last_year = '1990'
 
-            else:
-                last_date = '1990-01-01'
-                last_year = '1990'
+            #     url = self.start_url % code
+            #     # logger.info('Load Url: %s' % url)
+            #     self.load(url)
 
-                url = self.start_url % code
-                # logger.info('Load Url: %s' % url)
-                self.load(url)
+            #     _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
+            #     # if _start_year < '2007':
+            #     #     _start_year = '2007'
 
-                _start_year = self.lr.xpaths('//select[@name="year"]/option')[-1].attrib['value'].strip()
-                # if _start_year < '2007':
-                #     _start_year = '2007'
+            #     _start_year = int(_start_year)
+            #     if start_year < _start_year:
+            #         start_year = _start_year
 
-                _start_year = int(_start_year)
-                if start_year < _start_year:
-                    start_year = _start_year
+            # t = datetime.datetime.strptime(last_date, '%Y-%m-%d')
+            # quarter = pd.Timestamp(t).quarter
+            # start_year = int(start_year)
+            # for year in range(start_year, end_year):
+            #     for quarter in range(quarter, 5):
+            #         try:
+            #             self._check_delay()
+            #             _url = self.url_format % (code, year, quarter)
+            #             # logger.info('Load: %s: %s' % (code, _url))
 
-            t = datetime.datetime.strptime(last_date, '%Y-%m-%d')
-            quarter = pd.Timestamp(t).quarter
-            start_year = int(start_year)
-            for year in range(start_year, end_year):
-                for quarter in range(quarter, 5):
-                    try:
-                        self._check_delay()
-                        _url = self.url_format % (code, year, quarter)
-                        # logger.info('Load: %s: %s' % (code, _url))
+            #             # time.sleep(1) # random.randint(1, 5))
+            #             self.load(_url)
 
-                        # time.sleep(1) # random.randint(1, 5))
-                        self.load(_url)
+            #             if self.lr.body.find('FundHoldSharesTable') > -1:
+            #                 records = list(self.lr.xpaths('//table[@id="FundHoldSharesTable"]//tr')[2:])
+            #                 records.reverse()
 
-                        if self.lr.body.find('FundHoldSharesTable') > -1:
-                            records = list(self.lr.xpaths('//table[@id="FundHoldSharesTable"]//tr')[2:])
-                            records.reverse()
+            #                 for record in records:
+            #                     _date = record.xpath('./td[1]/div')[0].text.strip()
+            #                     # _date = record.xpath('./td[1]/div[1]/text()')[0].strip()
 
-                            for record in records:
-                                _date = record.xpath('./td[1]/div')[0].text.strip()
-                                # _date = record.xpath('./td[1]/div[1]/text()')[0].strip()
+            #                     detail_url = ''
+            #                     if not _date:
+            #                         _date = record.xpath('./td[1]/div/a')[0].text.strip()
+            #                         detail_url = record.xpath('./td[1]/div/a')[0].attrib['href'].strip()
 
-                                detail_url = ''
-                                if not _date:
-                                    _date = record.xpath('./td[1]/div/a')[0].text.strip()
-                                    detail_url = record.xpath('./td[1]/div/a')[0].attrib['href'].strip()
+            #                     if _date <= last_date:
+            #                         continue
 
-                                if _date <= last_date:
-                                    continue
+            #                     _opening_price = record.xpath('./td[2]/div')[0].text.strip()
+            #                     _highest_price = record.xpath('./td[3]/div')[0].text.strip()
+            #                     _closing_price = record.xpath('./td[4]/div')[0].text.strip()
+            #                     _floor_price = record.xpath('./td[5]/div')[0].text.strip()
+            #                     _trading_volume = record.xpath('./td[6]/div')[0].text.strip()
+            #                     _transaction_amount = record.xpath('./td[7]/div')[0].text.strip()
 
-                                _opening_price = record.xpath('./td[2]/div')[0].text.strip()
-                                _highest_price = record.xpath('./td[3]/div')[0].text.strip()
-                                _closing_price = record.xpath('./td[4]/div')[0].text.strip()
-                                _floor_price = record.xpath('./td[5]/div')[0].text.strip()
-                                _trading_volume = record.xpath('./td[6]/div')[0].text.strip()
-                                _transaction_amount = record.xpath('./td[7]/div')[0].text.strip()
-
-                                _id = '%s_%s' % (code, _date)
-                                _date = _date.replace('-', '')
-
-
-
-                                if is_detail:
-                                    details = []
-                                    if detail_url:
-
-                                        params = parse_qs(urlparse(detail_url).query, True)
-                                        detail_last_page = 'http://market.finance.sina.com.cn/transHis.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
-
-                                        # time.sleep(1)
-                                        self.load(detail_last_page)
-                                        # logger.info('Load Detail: %s: %s' % (code, detail_down_url))
-
-                                        details.extend(self._fetch_detail())
-                                        if self.lr.body.find('var detailPages=') > -1:
-                                            pages = json.loads(self.lr.body.split('var detailPages=', 1)[-1].split(';;')[0].replace("'", '"'))[1:]
-
-                                            for page in pages:
-                                                self._check_delay()
-                                                # time.sleep(1) # random.randint(1, 5))
-                                                detail_page = '%s&page=%s' % (detail_last_page, page[0])
-                                                self.load(detail_page)
-
-                                                details.extend(self._fetch_detail())
+            #                     _id = '%s_%s' % (code, _date)
+            #                     _date = _date.replace('-', '')
 
 
 
-                                    details.reverse()
-                                    for d in details:
-                                        # detail['id'] = _id
-                                        detail['date'] = _date
-                                        detail['time'] = d['time']
-                                        detail['price'] = d['price'] # d['price'].split(u'\u0000', 1)[0] if d['price'] else 0.0
-                                        detail['price_change'] = d['price_change']
-                                        detail['volume'] = d['volume']
-                                        detail['turnover'] = d['turnover']
-                                        detail['nature'] = d['nature']
+            #                     if is_detail:
+            #                         details = []
+            #                         if detail_url:
 
-                                        detail.append()
+            #                             params = parse_qs(urlparse(detail_url).query, True)
+            #                             detail_last_page = 'http://market.finance.sina.com.cn/transHis.php?date=%s&symbol=%s' % (params['date'][0], params['symbol'][0])
+
+            #                             # time.sleep(1)
+            #                             self.load(detail_last_page)
+            #                             # logger.info('Load Detail: %s: %s' % (code, detail_down_url))
+
+            #                             details.extend(self._fetch_detail())
+            #                             if self.lr.body.find('var detailPages=') > -1:
+            #                                 pages = json.loads(self.lr.body.split('var detailPages=', 1)[-1].split(';;')[0].replace("'", '"'))[1:]
+
+            #                                 for page in pages:
+            #                                     self._check_delay()
+            #                                     # time.sleep(1) # random.randint(1, 5))
+            #                                     detail_page = '%s&page=%s' % (detail_last_page, page[0])
+            #                                     self.load(detail_page)
+
+            #                                     details.extend(self._fetch_detail())
 
 
-                                # stock['id'] = _id
-                                stock['date'] = _date
-                                stock['open'] = _opening_price
-                                stock['high'] = _highest_price
-                                stock['close'] = _closing_price
-                                stock['low'] = _floor_price
-                                stock['volume'] = _trading_volume
-                                stock['amount'] = _transaction_amount
 
-                                stock.append()
+            #                         details.reverse()
+            #                         for d in details:
+            #                             # detail['id'] = _id
+            #                             detail['date'] = _date
+            #                             detail['time'] = d['time']
+            #                             detail['price'] = d['price'] # d['price'].split(u'\u0000', 1)[0] if d['price'] else 0.0
+            #                             detail['price_change'] = d['price_change']
+            #                             detail['volume'] = d['volume']
+            #                             detail['turnover'] = d['turnover']
+            #                             detail['nature'] = d['nature']
 
-                                h5file.flush()
-                    except:
-                        raise
+            #                             detail.append()
 
-                quarter = 1
-            # stock_table.flush()
+
+            #                     # stock['id'] = _id
+            #                     stock['date'] = _date
+            #                     stock['open'] = _opening_price
+            #                     stock['high'] = _highest_price
+            #                     stock['close'] = _closing_price
+            #                     stock['low'] = _floor_price
+            #                     stock['volume'] = _trading_volume
+            #                     stock['amount'] = _transaction_amount
+
+            #                     stock.append()
+
+            #                     h5file.flush()
+            #         except:
+            #             raise
+
+            #     quarter = 1
+            # # stock_table.flush()
+            ###############################################
+
+
             h5file.flush()
         except:
             logger.error(traceback.format_exc())
@@ -296,7 +307,72 @@ class LStockData():
             h5file.flush()
             h5file.close()
 
-    
+    def search_to_h5_kline(self, code, save_path, start_year=2007, mode='a'):
+        h5file = tables.open_file(save_path, mode=mode)
+        # h5file = h5py.File(save_path, 'r+')
+
+        exchange_code = exchange_codes.get(self.cache.get(code, None), None)
+        k_line_mins = [5, 15, 30, 60]
+
+        end_year = datetime.date.today().year + 1
+        self.t1 = time.time()
+        try:
+
+            if '/stock' not in h5file:
+                stocks_group = h5file.create_group('/', 'stock', 'Stock Information')
+            else:
+                stocks_group = h5file.get_node('/stock')
+
+            ####################################
+            #
+            # new k line data 5m, 15m, 30m, 60m
+            #
+            ####################################
+            kline_rows = {}
+            for kmin in k_line_mins:
+                if '/stock/kline%s' % kmin not in h5file:
+                    kline_table = h5file.create_table(stocks_group, 'kline%s' % kmin, StockDetails, "Stock K line %sm Table" % kmin)
+                else:
+                    kline_table = h5file.get_node('/stock/kline%s' % kmin)
+                kline_rows[kmin] = kline_table.row
+
+            h5file.flush()
+
+            # http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=5&ma=no&datalen=1023
+            for kmin in k_line_mins:
+                k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s%s&scale=%s&ma=no&datalen=1023' % (exchange_code, code, kmin)
+
+                self.lr.load(k_line_url)
+                kline_datas = json.loads(self.lr.body)
+
+                last_data = None
+                if kline_datas.nrows > 0:
+                    last_data = kline_datas[-1]
+
+                kline_row = kline_rows[kmin]
+                for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
+                    if str(last_data[0]) < kline_data['day']:
+                        kline_datas['date'] = kline_data['day']
+                        kline_datas['open'] = kline_data['open']
+                        kline_datas['high'] = kline_data['high']
+                        kline_datas['close'] = kline_data['close']
+                        kline_datas['low'] = kline_data['low']
+                        kline_datas['volume'] = kline_data['volume']
+
+                        kline_datas.append()
+
+
+            ############## end #################
+
+
+            h5file.flush()
+        except:
+            logger.error(traceback.format_exc())
+            open('tmp/last.html', 'w').write(self.lr.body)
+            raise
+        finally:
+            h5file.flush()
+            h5file.close()
 
 
 class LStockLoader():
