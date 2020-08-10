@@ -397,12 +397,12 @@ class LStockLoader():
                 logger.info('Append Code: %s' % code)
 
     def fetch_code(self, code):
-        lstockData = LStockData(delay=self.delay, self.cache)
+        lstockData = LStockData(delay=self.delay, cache=self.cache)
         lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
 
 
     def fetch_all(self):
-        lstockData = LStockData(delay=self.delay, self.cache)
+        lstockData = LStockData(delay=self.delay, cache=self.cache)
         for code in self.cache.iterkeys():
             lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
 
