@@ -393,11 +393,11 @@ def get_codes(delay=.0):
     urls = ['http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc',
             'http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc']
 
-    lr = LRequest()
+    lr = LRequest(delay=delay)
+    
     for url in urls:
         # logger.info('Load: %s' % url)
         lr.load(url, isdecode=True)
-        time.sleep(delay)
         while 1:
             for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
                 code = ele.text.strip()
@@ -410,7 +410,6 @@ def get_codes(delay=.0):
             next_url = urljoin(url, next_ele.attrib['href'])
             # logger.info('Load: %s' % next_url)
             lr.load(next_url, isdecode=True)
-            time.sleep(delay)
     return codes
 
 
