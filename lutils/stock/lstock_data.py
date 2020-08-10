@@ -394,22 +394,25 @@ def get_codes(delay=.0):
             'http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc']
 
     lr = LRequest(delay=delay)
-    
-    for url in urls:
-        # logger.info('Load: %s' % url)
-        lr.load(url, isdecode=True)
-        while 1:
-            for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
-                code = ele.text.strip()
-                if code.isdigit():
-                    codes.append(code)
 
-            next_ele = lr.xpath(u'//a[contains(text(), "下一页")]')
-            if next_ele is None:
-                break
-            next_url = urljoin(url, next_ele.attrib['href'])
-            # logger.info('Load: %s' % next_url)
-            lr.load(next_url, isdecode=True)
+    try:
+        for url in urls:
+            # logger.info('Load: %s' % url)
+            lr.load(url, isdecode=True)
+            while 1:
+                for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
+                    code = ele.text.strip()
+                    if code.isdigit():
+                        codes.append(code)
+
+                next_ele = lr.xpath(u'//a[contains(text(), "下一页")]')
+                if next_ele is None:
+                    break
+                next_url = urljoin(url, next_ele.attrib['href'])
+                # logger.info('Load: %s' % next_url)
+                lr.load(next_url, isdecode=True)
+    except:
+        logger.error(traceback.format_exc())
     return codes
 
 
