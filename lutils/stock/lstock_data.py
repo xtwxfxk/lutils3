@@ -314,9 +314,9 @@ class LStockLoader():
 
     def fetch_codes(self):
         codes = get_codes(self.delay)
-        for code in codes:
+        for code, m in codes:
             if code not in self.cache:
-                self.cache[code] = None
+                self.cache[code] = m
                 logger.info('Append Code: %s' % code)
 
     def fetch_code(self, code):
@@ -390,20 +390,20 @@ def get_new_stock_code(year=None):
 
 def get_codes(delay=.0): # 20200810: need delay 4s
     codes = []
-    urls = ['http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc',
-            'http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc']
+    urls = [('http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc', 'ha'),
+            ('http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc', 'sa')]
 
     lr = LRequest(delay=delay)
 
     try:
-        for url in urls:
+        for url, m in urls:
             # logger.info('Load: %s' % url)
             lr.load(url, isdecode=True)
             while 1:
                 for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
                     code = ele.text.strip()
                     if code.isdigit():
-                        codes.append(code)
+                        codes.append([code, m])
 
                 next_ele = lr.xpath(u'//a[contains(text(), "下一页")]')
                 if next_ele is None:
