@@ -312,10 +312,6 @@ class LStockData():
         h5file = tables.open_file(save_path, mode=mode)
         # h5file = h5py.File(save_path, 'r+')
 
-        # logger.info('### %s' % self.cache.get(code, None))
-        # logger.info('##### %s' % exchange_codes.get(self.cache.get(code, None), None))
-
-
         exchange_code = exchange_codes.get(self.cache.get(code, None), None)
         k_line_mins = [5, 15, 30, 60]
 
@@ -358,6 +354,8 @@ class LStockData():
 
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
+                    logger.info(last_data)
+                    logger.info(kline_data)
                     if str(last_data[0]) < kline_data['day']:
                         kline_row['date'] = kline_data['day']
                         kline_row['open'] = kline_data['open']
