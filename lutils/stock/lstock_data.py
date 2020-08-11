@@ -356,7 +356,7 @@ class LStockData():
                 # logger.info('K line url: %s' % k_line_url)
                 kline_row = kline_rows[kmin].row
 
-                self.lr.load(k_line_url)
+                self.load(k_line_url)
                 kline_datas = json.loads(self.lr.body)
 
                 last_data = None
