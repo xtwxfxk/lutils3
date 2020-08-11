@@ -400,7 +400,7 @@ class LStockLoader():
         for code, m in codes:
             if code not in self.cache:
                 self.cache[code] = m
-                logger.info('Append Code: %s' % code)
+                logger.info('Append Code: %s, exchange_code: %s' % (code, m))
 
     def fetch_code(self, code):
         lstockData = LStockData(delay=self.delay, cache=self.cache)
