@@ -356,7 +356,7 @@ class LStockData():
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
                     day = datetime.datetime.strptime(kline_data['day'], '%Y-%d-%m %H:%M:%S').timestamp()
-                    
+                    logger.info(kline_data)
                     if last_data is None or last_data[0] < day:
                         kline_row['date'] = day
                         kline_row['open'] = kline_data['open']
