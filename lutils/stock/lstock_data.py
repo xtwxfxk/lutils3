@@ -6,6 +6,7 @@ import time
 import random
 import logging
 import functools
+import datetime
 from urllib.parse import urlparse, urljoin, parse_qs
 import json
 import traceback
@@ -354,8 +355,10 @@ class LStockData():
 
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
-                    if last_data is None or str(last_data[0]) < kline_data['day']:
-                        kline_row['date'] = kline_data['day']
+                    day = datetime.datetime.strptime(kline_data['day'], '%Y-%d-%m %H:%M:%S').timestamp()
+                    
+                    if last_data is None or last_data[0] < day:
+                        kline_row['date'] = day
                         kline_row['open'] = kline_data['open']
                         kline_row['high'] = kline_data['high']
                         kline_row['close'] = kline_data['close']
