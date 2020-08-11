@@ -359,14 +359,14 @@ class LStockData():
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
                     if str(last_data[0]) < kline_data['day']:
-                        kline_datas['date'] = kline_data['day']
-                        kline_datas['open'] = kline_data['open']
-                        kline_datas['high'] = kline_data['high']
-                        kline_datas['close'] = kline_data['close']
-                        kline_datas['low'] = kline_data['low']
-                        kline_datas['volume'] = kline_data['volume']
+                        kline_row['date'] = kline_data['day']
+                        kline_row['open'] = kline_data['open']
+                        kline_row['high'] = kline_data['high']
+                        kline_row['close'] = kline_data['close']
+                        kline_row['low'] = kline_data['low']
+                        kline_row['volume'] = kline_data['volume']
 
-                        kline_datas.append()
+                        kline_row.append()
 
 
             ############## end #################
