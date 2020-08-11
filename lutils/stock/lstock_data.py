@@ -308,7 +308,7 @@ class LStockData():
             h5file.flush()
             h5file.close()
 
-    def search_to_h5_kline(self, code, save_path, start_year=2007, mode='a'):
+    def search_to_h5_k_line(self, code, save_path, start_year=2007, mode='a'):
         h5file = tables.open_file(save_path, mode=mode)
         # h5file = h5py.File(save_path, 'r+')
 
@@ -399,12 +399,14 @@ class LStockLoader():
     def fetch_code(self, code):
         lstockData = LStockData(delay=self.delay, cache=self.cache)
         lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
+        lstockData.search_to_h5_k_line(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode)
 
 
     def fetch_all(self):
         lstockData = LStockData(delay=self.delay, cache=self.cache)
         for code in self.cache.iterkeys():
             lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
+            lstockData.search_to_h5_k_line(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode)
 
     def fetch_all_future(self, max_workers=10):
         with LThreadPoolExecutor(max_workers=max_workers) as future:
