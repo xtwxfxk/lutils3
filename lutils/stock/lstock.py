@@ -28,6 +28,9 @@ class LStock():
     #
     #     details.loc[details['price'] == 0.0]
 
+    @k_line_date
+    def clear_k_line(self, datas):
+        return datas
 
     @detail_price_change_equal_price
     @detail_price
@@ -65,6 +68,9 @@ class LStock():
 
             return (stocks.ix[day, 'closing_price'] - stocks.ix[day, 'opening_price']), 0
 
+    def get_k_line(self, h5file, min=5):
+        k_line_datas = pd.read_hdf(h5file, '/stock/kline%s' % min)
+        return self.clear_k_line(datas=k_line_datas)
 
 
 

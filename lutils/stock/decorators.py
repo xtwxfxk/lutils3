@@ -7,6 +7,18 @@ import functools
 import numpy as np
 import pandas as pd
 
+def k_line_date(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        datas = kwargs.get('datas')
+
+        datas.loc[datas['price_change'] == datas['price'], 'price_change'] = 0.0
+
+        kwargs.setdefault('datas', datas)
+        return func(*args, **kwargs)
+
+    return wrapped
+
 def detail_price_change_equal_price(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
