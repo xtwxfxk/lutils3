@@ -353,7 +353,7 @@ class LStockData():
             # http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=5&ma=no&datalen=1023
             for kmin in k_line_mins:
                 k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s%s&scale=%s&ma=no&datalen=1023' % (exchange_code, code, kmin)
-                logger.info('K line url: %s' % k_line_url)
+                # logger.info('K line url: %s' % k_line_url)
                 kline_row = kline_rows[kmin].row
 
                 self.lr.load(k_line_url)
