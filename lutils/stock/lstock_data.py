@@ -312,6 +312,10 @@ class LStockData():
         h5file = tables.open_file(save_path, mode=mode)
         # h5file = h5py.File(save_path, 'r+')
 
+        logger.info('### %s' % self.cache.get(code, None))
+        logger.info('##### %s' % exchange_codes.get(self.cache.get(code, None), None))
+
+
         exchange_code = exchange_codes.get(self.cache.get(code, None), None)
         k_line_mins = [5, 15, 30, 60]
 
@@ -349,7 +353,7 @@ class LStockData():
                 kline_datas = json.loads(self.lr.body)
 
                 last_data = None
-                if kline_datas.nrows > 0:
+                if kline_row.nrows > 0:
                     last_data = kline_row[-1]
 
                 
