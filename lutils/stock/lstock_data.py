@@ -48,6 +48,16 @@ class StockDetails(IsDescription):
     turnover        = Int64Col(pos=6)
     nature          = StringCol(20, pos=7)
 
+class StockKLines(IsDescription):
+    # id                  = StringCol(20, pos=1) # stock code_date
+    date            = Float32Col(pos=1)
+    open            = Float32Col(pos=3)
+    high            = Float32Col(pos=4)
+    close           = Float32Col(pos=5)
+    low             = Float32Col(pos=6)
+    volume          = Float32Col(pos=7)
+
+
 
 def try_except_response(func):
     @functools.wraps(func)
@@ -333,7 +343,7 @@ class LStockData():
             kline_rows = {}
             for kmin in k_line_mins:
                 if '/stock/kline%s' % kmin not in h5file:
-                    kline_table = h5file.create_table(stocks_group, 'kline%s' % kmin, StockDetails, "Stock K line %sm Table" % kmin)
+                    kline_table = h5file.create_table(stocks_group, 'kline%s' % kmin, StockKLines, "Stock K line %sm Table" % kmin)
                 else:
                     kline_table = h5file.get_node('/stock/kline%s' % kmin)
                 kline_rows[kmin] = kline_table
@@ -356,7 +366,7 @@ class LStockData():
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
                     day = datetime.datetime.strptime(kline_data['day'], '%Y-%d-%m %H:%M:%S').timestamp()
-                    logger.info(kline_data)
+                    
                     if last_data is None or last_data[0] < day:
                         kline_row['date'] = day
                         kline_row['open'] = kline_data['open']
