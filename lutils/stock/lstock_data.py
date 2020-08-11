@@ -312,8 +312,8 @@ class LStockData():
         h5file = tables.open_file(save_path, mode=mode)
         # h5file = h5py.File(save_path, 'r+')
 
-        logger.info('### %s' % self.cache.get(code, None))
-        logger.info('##### %s' % exchange_codes.get(self.cache.get(code, None), None))
+        # logger.info('### %s' % self.cache.get(code, None))
+        # logger.info('##### %s' % exchange_codes.get(self.cache.get(code, None), None))
 
 
         exchange_code = exchange_codes.get(self.cache.get(code, None), None)
@@ -339,7 +339,7 @@ class LStockData():
                     kline_table = h5file.create_table(stocks_group, 'kline%s' % kmin, StockDetails, "Stock K line %sm Table" % kmin)
                 else:
                     kline_table = h5file.get_node('/stock/kline%s' % kmin)
-                kline_rows[kmin] = kline_table.row
+                kline_rows[kmin] = kline_table
 
             h5file.flush()
 
@@ -347,14 +347,14 @@ class LStockData():
             for kmin in k_line_mins:
                 k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s%s&scale=%s&ma=no&datalen=1023' % (exchange_code, code, kmin)
                 logger.info('K line url: %s' % k_line_url)
-                kline_row = kline_rows[kmin]
+                kline_row = kline_rows[kmin].row
 
                 self.lr.load(k_line_url)
                 kline_datas = json.loads(self.lr.body)
 
                 last_data = None
-                if kline_row.nrows > 0:
-                    last_data = kline_row[-1]
+                if kline_rows[kmin].nrows > 0:
+                    last_data = kline_rows[kmin][-1]
 
                 
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
@@ -398,9 +398,9 @@ class LStockLoader():
     def fetch_codes(self):
         codes = get_codes(self.delay)
         for code, m in codes:
-            if code not in self.cache:
-                self.cache[code] = m
-                logger.info('Append Code: %s, exchange_code: %s' % (code, m))
+            # if code not in self.cache:
+            self.cache[code] = m
+            logger.info('Append Code: %s, exchange_code: %s' % (code, m))
 
     def fetch_code(self, code):
         lstockData = LStockData(delay=self.delay, cache=self.cache)
