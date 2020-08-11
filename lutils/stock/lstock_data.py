@@ -342,15 +342,17 @@ class LStockData():
             # http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=5&ma=no&datalen=1023
             for kmin in k_line_mins:
                 k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s%s&scale=%s&ma=no&datalen=1023' % (exchange_code, code, kmin)
+                logger.info('K line url: %s' % k_line_url)
+                kline_row = kline_rows[kmin]
 
                 self.lr.load(k_line_url)
                 kline_datas = json.loads(self.lr.body)
 
                 last_data = None
                 if kline_datas.nrows > 0:
-                    last_data = kline_datas[-1]
+                    last_data = kline_row[-1]
 
-                kline_row = kline_rows[kmin]
+                
                 for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
                     if str(last_data[0]) < kline_data['day']:
                         kline_datas['date'] = kline_data['day']
