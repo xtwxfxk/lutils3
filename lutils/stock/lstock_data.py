@@ -64,16 +64,19 @@ def try_except_response(func):
     def wrapper(self, *args, **kwargs):
         while 1:
             try:
-                func(self, *args, **kwargs)
+                r = func(self, *args, **kwargs)
                 if 'null' == self.lr.body.strip():
-                    logger.error('Null Result!!! Try again after 300 Sec.')
-                    time.sleep(300)
+                    raise ValueError('Null Result!!! Try again after 300 Sec.')
+                return r
             except urlliberror.HTTPError as e:
                 if e.code == 456:
                     logger.error('Access Denied!!! Try again after 60 Sec.')
                     time.sleep(60)
                 else:
                     raise
+            except ValueError as e:
+                logger.error(e)
+                time.sleep(300)
     return wrapper
 
 def try_request_count(wait_count=50):
