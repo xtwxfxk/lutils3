@@ -63,6 +63,7 @@ def try_except_response(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         while 1:
+            url = kwargs.get('url')
             try:
                 r = func(self, *args, **kwargs)
                 if 'null' == self.lr.body.strip():
@@ -75,7 +76,7 @@ def try_except_response(func):
                 else:
                     raise
             except ValueError as e:
-                logger.error(e)
+                logger.error('%s, url: %s' % (e, url))
                 time.sleep(300)
     return wrapper
 
@@ -158,7 +159,7 @@ class LStockData():
     
     # @try_request_count(wait_count=50)
     @try_except_response
-    def load(self, url):
+    def load(self, url=''):
 
         return self.lr.load(url)
 
