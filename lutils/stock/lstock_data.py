@@ -159,7 +159,7 @@ class LStockData():
     
     # @try_request_count(wait_count=50)
     @try_except_response
-    def load(self, url=''):
+    def load(self, url):
 
         return self.lr.load(url)
 
