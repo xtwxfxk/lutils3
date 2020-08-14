@@ -63,6 +63,9 @@ def try_except_response(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         while 1:
+            logger.info(args)
+            logger.info('sssss')
+            logger.info(kwargs)
             url = kwargs.get('url')
             try:
                 r = func(self, *args, **kwargs)
