@@ -24,8 +24,6 @@ from lutils.futures.thread import LThreadPoolExecutor
 logger = logging.getLogger('lutils')
 
 
-exchange_codes = {'sa': 'sz', 'ha': 'hs'}
-
 class Stocks(IsDescription):
     # id         = StringCol(20, pos=1)
     date       = Int64Col(pos=1)
@@ -166,7 +164,6 @@ class LStockData():
     def search_to_h5(self, code, save_path, start_year=2007, mode='a', is_detail=True):
         h5file = tables.open_file(save_path, mode=mode)
 
-        exchange_code = exchange_codes.get(self.cache.get(code, None), None)
         k_line_mins = [5, 15, 30, 60]
 
         end_year = datetime.date.today().year + 1
@@ -330,7 +327,6 @@ class LStockData():
         h5file = tables.open_file(save_path, mode=mode)
         # h5file = h5py.File(save_path, 'r+')
 
-        exchange_code = exchange_codes.get(self.cache.get(code, None), None)
         k_line_mins = [5, 15, 30, 60]
 
         end_year = datetime.date.today().year + 1
@@ -359,7 +355,7 @@ class LStockData():
 
             # http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=5&ma=no&datalen=1023
             for kmin in k_line_mins:
-                k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s%s&scale=%s&ma=no&datalen=1023' % (exchange_code, code, kmin)
+                k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s&scale=%s&ma=no&datalen=1023' % (code, kmin)
                 # logger.info('K line url: %s' % k_line_url)
                 kline_row = kline_rows[kmin].row
 
@@ -412,11 +408,12 @@ class LStockLoader():
 
 
     def fetch_codes(self):
-        codes = get_codes(self.delay)
-        for code, m in codes:
+        # codes = get_codes(self.delay)
+        codes = get_codes_sina(self.delay)
+        for code in codes:
             # if code not in self.cache:
-            self.cache[code] = m
-            logger.info('Append Code: %s, exchange_code: %s' % (code, m))
+            self.cache[code] = None
+            logger.info('Append Code: %s' % (code))
 
     def fetch_code(self, code):
         lstockData = LStockData(delay=self.delay, cache=self.cache)
@@ -491,8 +488,10 @@ def get_new_stock_code(year=None):
 
 def get_codes(delay=.0): # 20200810: need delay 4s
     codes = []
-    urls = [('http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc', 'ha'),
-            ('http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc', 'sa')]
+    urls = ['http://app.finance.ifeng.com/list/stock.php?t=ha&f=symbol&o=asc',
+            'http://app.finance.ifeng.com/list/stock.php?t=hs&f=symbol&o=asc',
+            'http://app.finance.ifeng.com/list/stock.php?t=sa&f=symbol&o=asc',
+            'http://app.finance.ifeng.com/list/stock.php?t=kcb&f=symbol&o=asc',]
 
     lr = LRequest(delay=delay)
 
@@ -504,7 +503,7 @@ def get_codes(delay=.0): # 20200810: need delay 4s
                 for ele in lr.xpaths('//div[@class="tab01"]/table//td[1]/a')[:-1]:
                     code = ele.text.strip()
                     if code.isdigit():
-                        codes.append([code, m])
+                        codes.append(code)
 
                 next_ele = lr.xpath(u'//a[contains(text(), "下一页")]')
                 if next_ele is None:
@@ -514,6 +513,20 @@ def get_codes(delay=.0): # 20200810: need delay 4s
                 lr.load(next_url, isdecode=True)
     except:
         logger.error(traceback.format_exc())
+    return codes
+
+
+def get_codes_sina(delay=.0):
+    codes = []
+    # url = 'http://vip.stock.finance.sina.com.cn/datacenter/hqstat.html#jdgd'
+    url = '''http://money.finance.sina.com.cn/quotes_service/api/jsonp_v2.php/IO.XSRV2.CallbackList['ys65jC9HtVOEBgTh']/StatisticsService.getPeriodList?page=1&num=9999&sort=_5high&asc=0&node=adr_hk'''
+
+    lr = LRequest(delay=delay)
+    lr.load(url, isdecode=True)
+
+    for s in json.loads(lr.body.split('](', 1)[-1][:-2]):
+        codes.append(s['symbol'])
+
     return codes
 
 
