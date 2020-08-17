@@ -361,25 +361,26 @@ class LStockData():
                 kline_row = kline_rows[kmin].row
 
                 self.load(k_line_url)
-                kline_datas = json.loads(self.lr.body)
+                if 'null' != self.lr.body.strip():
+                    kline_datas = json.loads(self.lr.body)
 
-                last_data = None
-                if kline_rows[kmin].nrows > 0:
-                    last_data = kline_rows[kmin][-1]
+                    last_data = None
+                    if kline_rows[kmin].nrows > 0:
+                        last_data = kline_rows[kmin][-1]
 
-                
-                for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
-                    day = datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp()
                     
-                    if last_data is None or last_data[0] < day:
-                        kline_row['date'] = day
-                        kline_row['open'] = kline_data['open']
-                        kline_row['high'] = kline_data['high']
-                        kline_row['close'] = kline_data['close']
-                        kline_row['low'] = kline_data['low']
-                        kline_row['volume'] = kline_data['volume']
+                    for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
+                        day = datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp()
+                        
+                        if last_data is None or last_data[0] < day:
+                            kline_row['date'] = day
+                            kline_row['open'] = kline_data['open']
+                            kline_row['high'] = kline_data['high']
+                            kline_row['close'] = kline_data['close']
+                            kline_row['low'] = kline_data['low']
+                            kline_row['volume'] = kline_data['volume']
 
-                        kline_row.append()
+                            kline_row.append()
 
 
             ############## end #################
