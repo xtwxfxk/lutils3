@@ -429,10 +429,12 @@ class LStockLoader():
             lstockData.search_to_h5(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode, self.is_detail)
             lstockData.search_to_h5_k_line(code, os.path.join(self.save_root, '%s.h5' % code), self.start_year, self.mode)
 
-    def fetch_all_future(self, max_workers=10):
+    def fetch_all_future_loop(self, max_workers=10):
         with LThreadPoolExecutor(max_workers=max_workers) as future:
-            for code in self.cache.iterkeys():
-                future.submit(self.fetch_code, code)
+            while 1:
+                for code in self.cache.iterkeys():
+                    future.submit(self.fetch_code, code)
+                logger.info('Start Next...')
 
 
 
