@@ -67,7 +67,8 @@ def try_except_response(func):
             try:
                 r = func(self, *args, **kwargs)
                 if 'null' == self.lr.body.strip():
-                    raise ValueError('Null Result!!! Try again after 300 Sec.')
+                    # raise ValueError('Null Result!!! Try again after 300 Sec.')
+                    logger.error('Null Result!!!, url: %s' % (url))
                 return r
             except urlliberror.HTTPError as e:
                 if e.code == 456:
@@ -77,7 +78,7 @@ def try_except_response(func):
                     raise
             except ValueError as e:
                 logger.error('%s, url: %s' % (e, url))
-                time.sleep(300)
+                # time.sleep(300)
     return wrapper
 
 def try_request_count(wait_count=50):
