@@ -576,4 +576,4 @@ if __name__ == '__main__':
 
     ls = LStockLoader(save_root='F:\\xx', delay=1, start_year=2017)
     ls.fetch_codes()
-    ls.fetch_all_future(max_workers=1)
+    ls.fetch_all_future_loop(max_workers=1)
