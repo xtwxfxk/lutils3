@@ -433,9 +433,12 @@ class LStockLoader():
     def fetch_all_future_loop(self, max_workers=10):
         with LThreadPoolExecutor(max_workers=max_workers) as future:
             while 1:
-                for code in self.cache.iterkeys():
-                    future.submit(self.fetch_code, code)
-                logger.info('Start Next...')
+                try:
+                    for code in self.cache.iterkeys():
+                        future.submit(self.fetch_code, code)
+                    logger.info('Start Next...')
+                except:
+                    logger.error(traceback.format_exc())
 
 
 
