@@ -436,8 +436,28 @@ class LStockLoader():
         with LThreadPoolExecutor(max_workers=max_workers) as future:
             while 1:
                 try:
+                    is_over_today = True
                     for code in self.cache.iterkeys():
-                        future.submit(self.fetch_code, code)
+                        h5path = os.path.join(self.save_root, '%s.h5' % code)
+                        modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
+                        if (modify_time.hour > 15 and modify_time.minute > 15) or (modify_time.hour < 9):
+                            logger.info('Today data all spider: %s' % code)
+                        else:
+                            is_over_today = False
+                            future.submit(self.fetch_code, code)
+
+                    if is_over_today:
+                        now = datetime.datetime.now()
+
+                        sleep_time = 0
+                        if now.hour < 9:
+                            sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 36) - now).total_seconds()
+                        else:
+                            tomorrow = now + datetime.timedelta(days=1)
+                            sleep_time = (datetime.datetime(now.tomorrow, now.tomorrow, now.tomorrow, 9, 36) - now).total_seconds()
+                        logger.info('Today all data spider... Sleep %ss' % sleep_time)
+                        time.time(sleep_time)
+
                     logger.info('Start Next...')
                 except KeyboardInterrupt:
                     raise
