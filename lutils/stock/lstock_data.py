@@ -48,7 +48,7 @@ class StockDetails(IsDescription):
 
 class StockKLines(IsDescription):
     # id                  = StringCol(20, pos=1) # stock code_date
-    date            = Float32Col(pos=1)
+    date            = Int64Col(pos=1)
     open            = Float32Col(pos=3)
     high            = Float32Col(pos=4)
     close           = Float32Col(pos=5)
@@ -370,7 +370,7 @@ class LStockData():
 
                     
                     for kline_data in kline_datas[:-1]: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
-                        day = datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp()
+                        day = int(datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp())
                         
                         if last_data is None or last_data[0] < day:
                             kline_row['date'] = day
@@ -400,7 +400,9 @@ class LStockLoader():
 
     def __init__(self, save_root, cache_path='tmp/cache', delay=.0, start_year=2007, mode='a', is_detail=True):
         self.save_root = save_root
-        
+        if not os.path.exists(self.save_root):
+            os.mkdir(self.save_root)
+
         self.cache = Cache(cache_path)
 
         self.delay = delay
@@ -437,6 +439,8 @@ class LStockLoader():
                     for code in self.cache.iterkeys():
                         future.submit(self.fetch_code, code)
                     logger.info('Start Next...')
+                except KeyboardInterrupt:
+                    raise
                 except:
                     logger.error(traceback.format_exc())
 
