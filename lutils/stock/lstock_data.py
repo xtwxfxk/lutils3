@@ -440,7 +440,8 @@ class LStockLoader():
                     for code in self.cache.iterkeys():
                         h5path = os.path.join(self.save_root, '%s.h5' % code)
                         modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
-                        if (modify_time.hour > 15 and modify_time.minute > 15) or (modify_time.hour < 9):
+
+                        if (time.time() > datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).timestamp()) or (modify_time.hour < 9):
                             logger.info('Today data all spider: %s' % code)
                         else:
                             is_over_today = False
