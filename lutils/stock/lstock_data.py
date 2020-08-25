@@ -440,14 +440,25 @@ class LStockLoader():
                     for code in self.cache.iterkeys():
                         h5path = os.path.join(self.save_root, '%s.h5' % code)
 
-                        now = datetime.datetime.now()
                         if os.path.exists(h5path):
-                            modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
-                            if not (now.hour > 8 and now.hour < 15) and ((time.time() > datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).timestamp()) or (modify_time.hour < 9)):
-                                logger.info('Today data all spider: %s' % code)
-                            else:
+
+                            now = datetime.datetime.now()
+                            now_time = time.time()
+
+                            modify_time = os.path.getmtime(h5path)
+                            
+                            start_time = datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 9, 36).time()
+                            end_time = datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).time()
+
+                            if now_time > start_time and now_time < end_time and now.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
+                            elif modify_time > start_time and modify_time < end_time:
+                                is_over_today = False
+                                future.submit(self.fetch_code, code)
+                            else:
+                                logger.info('Today data spider: %s' % code)
+
                         else:
                             is_over_today = False
                             future.submit(self.fetch_code, code)
@@ -457,10 +468,17 @@ class LStockLoader():
 
                         sleep_time = 0
                         if now.hour < 9:
-                            sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 36) - now).total_seconds()
+                            sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
+                        elif now.isocalendar[2] == 5:
+                            monday = now + datetime.timedelta(days=3)
+                            sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
+                        elif now.isocalendar[2] == 6:
+                            monday = now + datetime.timedelta(days=2)
+                            sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
                         else:
                             tomorrow = now + datetime.timedelta(days=1)
-                            sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 36) - now).total_seconds()
+                            sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 37) - now).total_seconds()
+
                         logger.info('Today all data spider... Sleep %ss' % sleep_time)
                         time.time(sleep_time)
 
