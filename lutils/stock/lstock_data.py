@@ -443,12 +443,14 @@ class LStockLoader():
                         if os.path.exists(h5path):
 
                             now = datetime.datetime.now()
+                            modify = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
+                            
                             now_time = time.time()
 
-                            modify_time = os.path.getmtime(h5path)
+                            modify_time = modify.timestamp()
                             
-                            start_time = datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 9, 36).time()
-                            end_time = datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).time()
+                            start_time = datetime.datetime(modify.year, modify.month, modify.day, 9, 36).time()
+                            end_time = datetime.datetime(modify.year, modify.month, modify.day, 15, 15).time()
 
                             if now_time > start_time and now_time < end_time and now.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
