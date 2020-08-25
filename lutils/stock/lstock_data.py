@@ -440,9 +440,10 @@ class LStockLoader():
                     for code in self.cache.iterkeys():
                         h5path = os.path.join(self.save_root, '%s.h5' % code)
 
+                        now = datetime.datetime.now()
                         if os.path.exists(h5path):
                             modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
-                            if (time.time() > datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).timestamp()) or (modify_time.hour < 9):
+                            if not (now.hour > 8 and now.hour < 15) and ((time.time() > datetime.datetime(modify_time.year, modify_time.month, modify_time.day, 15, 15).timestamp()) or (modify_time.hour < 9)):
                                 logger.info('Today data all spider: %s' % code)
                             else:
                                 is_over_today = False
@@ -459,7 +460,7 @@ class LStockLoader():
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 36) - now).total_seconds()
                         else:
                             tomorrow = now + datetime.timedelta(days=1)
-                            sleep_time = (datetime.datetime(now.tomorrow, now.tomorrow, now.tomorrow, 9, 36) - now).total_seconds()
+                            sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 36) - now).total_seconds()
                         logger.info('Today all data spider... Sleep %ss' % sleep_time)
                         time.time(sleep_time)
 
