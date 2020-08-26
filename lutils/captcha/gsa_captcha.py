@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'xtwxfxk'
 
-import StringIO, urllib2, time
+import io, time
 from ClientForm import ParseFile
 from lutils.lrequest import LRequest
 
@@ -26,7 +26,7 @@ class GsaCaptcha():
     def decode(self, file_path):
         try:
 
-            form = ParseFile(StringIO.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
             form.add_file(open(file_path, 'rb'), name='file')
             self.lr.load(form.click(), is_xpath=False)
             gsa_result = self.lr.body
@@ -41,8 +41,8 @@ class GsaCaptcha():
     def decode_stream(self, file_data):
         try:
 
-            form = ParseFile(StringIO.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-            form.add_file(StringIO.StringIO(file_data), name='file')
+            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+            form.add_file(io.StringIO(file_data), name='file')
             self.lr.load(form.click(), is_xpath=False)
             result = ''
             gsa_result = self.lr.body
@@ -57,8 +57,8 @@ class GsaCaptcha():
         try:
             self.lr.load(url)
 
-            form = ParseFile(StringIO.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-            form.add_file(StringIO.StringIO(self.lr.body), name='file')
+            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+            form.add_file(io.StringIO(self.lr.body), name='file')
             self.lr.load(form.click(), is_xpath=False)
             result = ''
             gsa_result = self.lr.body
