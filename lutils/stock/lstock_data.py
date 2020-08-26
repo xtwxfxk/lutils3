@@ -482,7 +482,7 @@ class LStockLoader():
                             sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 37) - now).total_seconds()
 
                         logger.info('Today all data spider... Sleep %ss' % sleep_time)
-                        time.time(sleep_time)
+                        time.sleep(sleep_time)
 
                     logger.info('Start Next...')
                 except KeyboardInterrupt:
