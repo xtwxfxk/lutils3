@@ -469,7 +469,7 @@ class LStockLoader():
                         now = datetime.datetime.now()
 
                         sleep_time = 0
-                        if now.timestamp() < datetime.datetime(now.year, now.month, now.day, 9, 37).timestamp():
+                        if now.hour >= 0 and now.timestamp() < datetime.datetime(now.year, now.month, now.day, 9, 37).timestamp():
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
                         elif now.isocalendar()[2] == 5:
                             monday = now + datetime.timedelta(days=3)
