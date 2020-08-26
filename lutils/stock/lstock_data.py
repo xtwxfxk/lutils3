@@ -471,10 +471,10 @@ class LStockLoader():
                         sleep_time = 0
                         if now.hour < 9:
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
-                        elif now.isocalendar[2] == 5:
+                        elif now.isocalendar()[2] == 5:
                             monday = now + datetime.timedelta(days=3)
                             sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
-                        elif now.isocalendar[2] == 6:
+                        elif now.isocalendar()[2] == 6:
                             monday = now + datetime.timedelta(days=2)
                             sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
                         else:
