@@ -449,8 +449,8 @@ class LStockLoader():
 
                             modify_time = modify.timestamp()
                             
-                            start_time = datetime.datetime(modify.year, modify.month, modify.day, 9, 36).timestamp()
-                            end_time = datetime.datetime(modify.year, modify.month, modify.day, 15, 15).timestamp()
+                            start_time = datetime.datetime(now.year, now.month, now.day, 9, 36).timestamp()
+                            end_time = datetime.datetime(now.year, now.month, now.day, 15, 15).timestamp()
 
                             if now_time > start_time and now_time < end_time and now.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
@@ -469,7 +469,7 @@ class LStockLoader():
                         now = datetime.datetime.now()
 
                         sleep_time = 0
-                        if now.hour < 9:
+                        if now.timestamp() < datetime.datetime(now.year, now.month, now.day, 9, 37).timestamp():
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
                         elif now.isocalendar()[2] == 5:
                             monday = now + datetime.timedelta(days=3)
