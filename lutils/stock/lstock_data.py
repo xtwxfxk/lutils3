@@ -445,17 +445,15 @@ class LStockLoader():
                             now = datetime.datetime.now()
                             modify = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
 
-                            now_time = time.time()
-
                             modify_time = modify.timestamp()
                             
-                            start_time = datetime.datetime(now.year, now.month, now.day, 9, 36).timestamp()
-                            end_time = datetime.datetime(now.year, now.month, now.day, 15, 15).timestamp()
+                            start_time = datetime.datetime(now.year, now.month, now.day, 9, 36)
+                            end_time = datetime.datetime(now.year, now.month, now.day, 15, 15)
 
-                            if now_time > start_time and now_time < end_time and now.isocalendar()[2] not in (6, 7):
+                            if now > start_time and now < end_time and now.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
-                            elif modify_time < end_time:
+                            elif modify_time < end_time and modify_time > start_time:
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             else:
