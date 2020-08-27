@@ -7,3 +7,4 @@ tables
 stockstats
 diskcache
 pillow
+plotly
