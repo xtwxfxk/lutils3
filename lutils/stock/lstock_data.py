@@ -443,10 +443,8 @@ class LStockLoader():
                         if os.path.exists(h5path):
 
                             now = datetime.datetime.now()
-                            modify = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
+                            modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
 
-                            modify_time = modify.timestamp()
-                            
                             start_time = datetime.datetime(now.year, now.month, now.day, 9, 36)
                             end_time = datetime.datetime(now.year, now.month, now.day, 15, 15)
 
@@ -456,6 +454,8 @@ class LStockLoader():
                             elif modify_time < end_time and modify_time > start_time:
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
+                            # elif modify_time < start_time and modify_time.hour > 9:
+                                
                             else:
                                 logger.info('Today data spider: %s' % code)
 
