@@ -587,11 +587,15 @@ def get_codes_sina(delay=.0):
     url = '''http://money.finance.sina.com.cn/quotes_service/api/jsonp_v2.php/IO.XSRV2.CallbackList['ys65jC9HtVOEBgTh']/StatisticsService.getPeriodList?page=1&num=9999&sort=_5high&asc=0&node=adr_hk'''
 
     lr = LRequest(delay=delay)
-    lr.load(url, isdecode=True)
 
-    for s in json.loads(lr.body.split('](', 1)[-1][:-2]):
-        codes.append(s['symbol'])
+    try:
+        lr.load(url, isdecode=True)
 
+        for s in json.loads(lr.body.split('](', 1)[-1][:-2]):
+            codes.append(s['symbol'])
+    except:
+        logger.error(traceback.format_exc())
+        
     return codes
 
 
