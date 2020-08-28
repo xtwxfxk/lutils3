@@ -77,6 +77,7 @@ def try_except_response(func):
                     time.sleep(5)
                 else:
                     logger.error('Error not catch: %s' % e)
+                    logger.error('Error code: %s' % e.code)
                     raise
             except ValueError as e:
                 logger.error('%s, url: %s' % (e, url))
