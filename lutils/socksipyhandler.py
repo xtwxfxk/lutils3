@@ -36,7 +36,7 @@ def create_connection(address, proxyargs=None, timeout=socket._GLOBAL_DEFAULT_TI
 
             return sock
 
-        except socket.error: # as msg:
+        except socket.error as msg:
             if sock is not None:
                 sock.close()
 
