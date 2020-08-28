@@ -39,9 +39,9 @@ def plot_stock(df, name='', index=None):
         go.Scatter(y=df.ma5, line=dict(color='orange', width=1), name='MA 5', yaxis='y2'),
         # go.Scatter(y=df.ma10, line=dict(color='green', width=1), name='MA 10', yaxis='y2'),
         
-    #     go.Scatter(y=bb_avg, line=dict(color='#ccc', width=1), name='MA 10', yaxis='y2'),
-        go.Scatter(y=bb_upper, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', name='Bollinger Bands', yaxis='y2'),
-        go.Scatter(y=bb_lower, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', showlegend=False, yaxis='y2'),
+        go.Scatter(y=bb_avg, line=dict(color='#c543fa', width=1), name='MA 10', yaxis='y2'),
+        go.Scatter(y=bb_upper, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', name='Boll Upper', yaxis='y2'),
+        go.Scatter(y=bb_lower, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', name='Boll Lower', showlegend=False, yaxis='y2'),
         
         go.Bar(y=df.volume, yaxis='y', name='volume', marker=dict(color=colors))
     ])
@@ -73,7 +73,8 @@ def plot_stock(df, name='', index=None):
                         step='all'),
                 ])
             )
-        )
+        ),
+        hovermode="x unified"
     )
 
     return fig
