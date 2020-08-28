@@ -69,6 +69,7 @@ def try_except_response(func):
                     logger.error('Null Result!!!, url: %s' % (url))
                 return r
             except urlliberror.HTTPError as e:
+                logger.error('error code: %s' % e.code)
                 if e.code == 456:
                     logger.error('Access Denied!!! Try again after 60 Sec.')
                     time.sleep(60)
