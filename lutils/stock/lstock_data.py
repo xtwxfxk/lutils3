@@ -362,31 +362,35 @@ class LStockData():
             # http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=5&ma=no&datalen=1023
             for kmin in k_line_mins:
                 k_line_url = 'http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=%s&scale=%s&ma=no&datalen=1023' % (code, kmin)
-                # logger.info('K line url: %s' % k_line_url)
-                kline_row = kline_rows[kmin].row
+                try:
+                    # logger.info('K line url: %s' % k_line_url)
+                    kline_row = kline_rows[kmin].row
 
-                self.load(k_line_url)
-                if 'null' != self.lr.body.strip():
-                    kline_datas = json.loads(self.lr.body)
+                    self.load(k_line_url)
+                    if 'null' != self.lr.body.strip():
+                        kline_datas = json.loads(self.lr.body)
 
-                    last_data = None
-                    if kline_rows[kmin].nrows > 0:
-                        last_data = kline_rows[kmin][-1]
+                        last_data = None
+                        if kline_rows[kmin].nrows > 0:
+                            last_data = kline_rows[kmin][-1]
 
-                    
-                    for kline_data in kline_datas: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
-                        day = int(datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp())
                         
-                        if last_data is None or last_data[0] < day:
-                            kline_row['date'] = day
-                            kline_row['open'] = kline_data['open']
-                            kline_row['high'] = kline_data['high']
-                            kline_row['close'] = kline_data['close']
-                            kline_row['low'] = kline_data['low']
-                            kline_row['volume'] = kline_data['volume']
+                        for kline_data in kline_datas: # [{"day":"2020-08-07 15:00:00","open":"20.390","high":"20.390","low":"20.300","close":"20.300","volume":"54500"}, ...]
+                            day = int(datetime.datetime.strptime(kline_data['day'], '%Y-%m-%d %H:%M:%S').timestamp())
+                            
+                            if last_data is None or last_data[0] < day:
+                                kline_row['date'] = day
+                                kline_row['open'] = kline_data['open']
+                                kline_row['high'] = kline_data['high']
+                                kline_row['close'] = kline_data['close']
+                                kline_row['low'] = kline_data['low']
+                                kline_row['volume'] = kline_data['volume']
 
-                            kline_row.append()
-
+                                kline_row.append()
+                except:
+                    logger.error('Error Url: %s' % k_line_url)
+                    logger.error(traceback.format_exc())
+                    open('tmp/last.html', 'w').write(self.lr.body)
 
             ############## end #################
 
