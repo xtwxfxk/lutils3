@@ -69,10 +69,10 @@ def try_except_response(func):
                     logger.error('Null Result!!!, url: %s' % (url))
                 return r
             except urlliberror.HTTPError as e:
-                if e.code == '456':
+                if e.code == 456:
                     logger.error('Access Denied!!! Try again after 60 Sec.')
                     time.sleep(60)
-                elif e.code == '504':
+                elif e.code == 504:
                     logger.error('%s, Try again after 5 Sec.' % e)
                     time.sleep(5)
                 else:
@@ -595,7 +595,7 @@ def get_codes_sina(delay=.0):
             codes.append(s['symbol'])
     except:
         logger.error(traceback.format_exc())
-        
+
     return codes
 
 
