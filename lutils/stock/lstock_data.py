@@ -72,6 +72,9 @@ def try_except_response(func):
                 if e.code == 456:
                     logger.error('Access Denied!!! Try again after 60 Sec.')
                     time.sleep(60)
+                if e.code == 504:
+                    logger.error('%s, Try again after 5 Sec.' % e)
+                    time.sleep(5)
                 else:
                     raise
             except ValueError as e:
@@ -455,7 +458,7 @@ class LStockLoader():
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             # elif modify_time < start_time and modify_time.hour > 9:
-                                
+
                             else:
                                 logger.info('Today data spider: %s' % code)
 
