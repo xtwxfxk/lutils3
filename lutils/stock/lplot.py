@@ -15,7 +15,7 @@ def bbands(price, window_size=10, num_of_std=5):
 
 
 
-def plot_stock(df, name=''):
+def plot_stock(df, name='', index=None):
 
     bb_avg, bb_upper, bb_lower = bbands(df.close)
 
@@ -24,9 +24,12 @@ def plot_stock(df, name=''):
     colors[df.open >= df.close] = 'red'
     colors[df.open < df.close] = 'green'
 
+    dd['ma5'] = df.close.rolling(window=5, min_periods=1).mean()
+    dd['ma10'] = df.close.rolling(window=10, min_periods=1).mean()
+
     fig = go.Figure(data=[
         go.Candlestick(
-            #x=df.date,
+            x=index,
             open=df.open,
             high=df.high,
             low=df.low,
@@ -61,7 +64,16 @@ def plot_stock(df, name=''):
             b=10,
             t=10,
             pad=1
-        ),
+        ), xaxis=dict(
+            rangeselector = dict(
+                visible = True,
+                buttons = list([
+                    dict(count=1,
+                        label='reset',
+                        step='all'),
+                ])
+            )
+        )
     )
 
     return fig
