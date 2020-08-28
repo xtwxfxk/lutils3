@@ -24,8 +24,8 @@ def plot_stock(df, name='', index=None):
     colors[df.open >= df.close] = 'red'
     colors[df.open < df.close] = 'green'
 
-    dd['ma5'] = df.close.rolling(window=5, min_periods=1).mean()
-    dd['ma10'] = df.close.rolling(window=10, min_periods=1).mean()
+    df['ma5'] = df.close.rolling(window=5, min_periods=1).mean()
+    df['ma10'] = df.close.rolling(window=10, min_periods=1).mean()
 
     fig = go.Figure(data=[
         go.Candlestick(
@@ -37,9 +37,9 @@ def plot_stock(df, name='', index=None):
             name=name,
             yaxis='y2'),
         go.Scatter(y=df.ma5, line=dict(color='orange', width=1), name='MA 5', yaxis='y2'),
-        go.Scatter(y=df.ma10, line=dict(color='green', width=1), name='MA 10', yaxis='y2'),
+        # go.Scatter(y=df.ma10, line=dict(color='green', width=1), name='MA 10', yaxis='y2'),
         
-    #     go.Scatter(y=bb_avg, line=dict(color='#ccc', width=1), name='MA 10'),
+    #     go.Scatter(y=bb_avg, line=dict(color='#ccc', width=1), name='MA 10', yaxis='y2'),
         go.Scatter(y=bb_upper, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', name='Bollinger Bands', yaxis='y2'),
         go.Scatter(y=bb_lower, line=dict(color='#ccc', width=1), legendgroup='Bollinger Bands', showlegend=False, yaxis='y2'),
         

@@ -3,6 +3,7 @@ __author__ = 'xtwxfxk'
 
 import os
 import sys
+import logging
 import urllib
 import http.client
 import socks
@@ -14,6 +15,8 @@ from lutils import LUTILS_ROOT
 
 header_path = os.path.join(LUTILS_ROOT, 'mykey.pem')
 header_path = os.path.join(LUTILS_ROOT, 'mykey.pub')
+
+logger = logging.getLogger('lutils')
 
 # proxyargs:  proxytype, addr, port, rdns=True, username, password
 def create_connection(address, proxyargs=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, debuglevel=0):
@@ -37,6 +40,7 @@ def create_connection(address, proxyargs=None, timeout=socket._GLOBAL_DEFAULT_TI
             return sock
 
         except socket.error as msg:
+            logger.error('Socket Error: %s' % msg)
             if sock is not None:
                 sock.close()
 
