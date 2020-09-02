@@ -2,6 +2,7 @@ lxml
 pysocks
 BeautifulSoup4
 requests
+numpy
 pandas
 tables
 stockstats
