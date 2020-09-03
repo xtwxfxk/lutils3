@@ -5,6 +5,7 @@ requests
 numpy
 pandas
 tables
+matplotlib
 stockstats
 diskcache
 pillow
