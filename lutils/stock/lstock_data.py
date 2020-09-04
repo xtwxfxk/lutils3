@@ -12,6 +12,7 @@ import json
 import traceback
 import datetime
 import tables
+import numpy as np
 import pandas as pd
 from tables import *
 from bs4 import BeautifulSoup
@@ -459,13 +460,13 @@ class LStockLoader():
                             # start_yestoday = start_time - datetime.timedelta(days=1)
                             end_yestoday = end_time - datetime.timedelta(days=1) 
 
-                            if now > start_time and now < end_time and now.isocalendar()[2] not in (6, 7):
+                            if now > start_time and now < end_time and np.is_busday(now.strftime('%Y-%m-%d')): # now.weekday() not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             elif modify_time < end_time and modify_time > start_time:
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
-                            elif modify_time < end_yestoday and end_yestoday.isocalendar()[2] not in (6, 7):
+                            elif modify_time < end_yestoday and np.is_busday(end_yestoday.strftime('%Y-%m-%d')): # end_yestoday.weekday() not in (1, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             else:
