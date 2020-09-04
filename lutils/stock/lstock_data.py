@@ -456,7 +456,8 @@ class LStockLoader():
 
                             start_time = datetime.datetime(now.year, now.month, now.day, 9, 36)
                             end_time = datetime.datetime(now.year, now.month, now.day, 15, 15)
-                            start_yestoday = start_time - datetime.timedelta(days=1) 
+                            # start_yestoday = start_time - datetime.timedelta(days=1)
+                            end_yestoday = end_time - datetime.timedelta(days=1) 
 
                             if now > start_time and now < end_time and now.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
@@ -464,7 +465,7 @@ class LStockLoader():
                             elif modify_time < end_time and modify_time > start_time:
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
-                            elif modify_time < start_yestoday and start_yestoday.isocalendar()[2] not in (6, 7):
+                            elif modify_time < end_yestoday and end_yestoday.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             else:
