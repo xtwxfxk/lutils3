@@ -496,7 +496,7 @@ class LStockLoader():
                         now = datetime.datetime.now()
 
                         sleep_time = 0
-                        if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37) and now.weekday() not in (6, 7):
+                        if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37) and np.is_busday(now.strftime('%Y-%m-%d')): # now.weekday() not in (6, 7):
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
                         elif now.weekday() in (5, 6):
                             monday = now + datetime.timedelta(days=(8 - now.weekday()))
