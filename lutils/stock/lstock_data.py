@@ -478,33 +478,14 @@ class LStockLoader():
                             future.submit(self.fetch_code, code)
 
                     if is_over_today:
-                        # now = datetime.datetime.now()
-
-                        # sleep_time = 0
-                        # if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37):
-                        #     sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
-                        # elif now.isocalendar()[2] == 5:
-                        #     monday = now + datetime.timedelta(days=3)
-                        #     sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
-                        # elif now.isocalendar()[2] == 6:
-                        #     monday = now + datetime.timedelta(days=2)
-                        #     sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
-                        # else:
-                        #     tomorrow = now + datetime.timedelta(days=1)
-                        #     sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 37) - now).total_seconds()
-
-
                         now = datetime.datetime.now()
 
                         sleep_time = 0
                         if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37) and np.is_busday(now.strftime('%Y-%m-%d')): # now.weekday() not in (6, 7):
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
-                        elif now.weekday() in (5, 6):
-                            monday = now + datetime.timedelta(days=(8 - now.weekday()))
-                            sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
                         else:
-                            tomorrow = now + datetime.timedelta(days=1)
-                            sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 37) - now).total_seconds()
+                            next_work_day = time.strptime(np.busday_offset(now.strftime('%Y-%m-%d'), 1), '%Y-%m-%d')
+                            sleep_time = (datetime.datetime(next_work_day.year, next_work_day.month, next_work_day.day, 9, 37) - now).total_seconds()
 
                         logger.info('Today all data spider... Sleep %ss' % sleep_time)
                         time.sleep(sleep_time)
