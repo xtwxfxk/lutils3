@@ -464,7 +464,7 @@ class LStockLoader():
                             elif modify_time < end_time and modify_time > start_time:
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
-                            elif modify_time < start_yestoday:
+                            elif modify_time < start_yestoday and start_yestoday.isocalendar()[2] not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             else:
