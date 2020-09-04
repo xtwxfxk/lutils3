@@ -476,16 +476,29 @@ class LStockLoader():
                             future.submit(self.fetch_code, code)
 
                     if is_over_today:
+                        # now = datetime.datetime.now()
+
+                        # sleep_time = 0
+                        # if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37):
+                        #     sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
+                        # elif now.isocalendar()[2] == 5:
+                        #     monday = now + datetime.timedelta(days=3)
+                        #     sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
+                        # elif now.isocalendar()[2] == 6:
+                        #     monday = now + datetime.timedelta(days=2)
+                        #     sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
+                        # else:
+                        #     tomorrow = now + datetime.timedelta(days=1)
+                        #     sleep_time = (datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 37) - now).total_seconds()
+
+
                         now = datetime.datetime.now()
 
                         sleep_time = 0
-                        if now.hour >= 0 and now.timestamp() < datetime.datetime(now.year, now.month, now.day, 9, 37).timestamp():
+                        if now.hour >= 0 and now < datetime.datetime(now.year, now.month, now.day, 9, 37) and now.weekday() not in (6, 7):
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
-                        elif now.isocalendar()[2] == 5:
-                            monday = now + datetime.timedelta(days=3)
-                            sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
-                        elif now.isocalendar()[2] == 6:
-                            monday = now + datetime.timedelta(days=2)
+                        elif now.weekday() in (5, 6):
+                            monday = now + datetime.timedelta(days=(8 - now.weekday()))
                             sleep_time = (datetime.datetime(monday.year, monday.month, monday.day, 9, 37) - now).total_seconds()
                         else:
                             tomorrow = now + datetime.timedelta(days=1)
