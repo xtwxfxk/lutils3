@@ -464,7 +464,7 @@ class LStockLoader():
                             if now > start_time and now < end_time and np.is_busday(now.strftime('%Y-%m-%d')): # now.weekday() not in (6, 7):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
-                            elif modify_time < end_time and modify_time > start_time:
+                            elif modify_time < end_time and modify_time > start_time and np.is_busday(now.strftime('%Y-%m-%d')):
                                 is_over_today = False
                                 future.submit(self.fetch_code, code)
                             elif modify_time < end_yestoday and np.is_busday(end_yestoday.strftime('%Y-%m-%d')): # end_yestoday.weekday() not in (1, 7):
