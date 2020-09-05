@@ -485,7 +485,10 @@ class LStockLoader():
                             sleep_time = (datetime.datetime(now.year, now.month, now.day, 9, 37) - now).total_seconds()
                         else:
                             # next_work_day = np.busday_offset(now.strftime('%Y-%m-%d'), 1).astype('M8[ms]').astype('O')
-                            next_work_day = np.busday_offset(now.strftime('%Y-%m-%d'), 1).astype(datetime.datetime)
+                            if np.is_busday(now.strftime('%Y-%m-%d')):
+                                next_work_day = np.busday_offset(now.strftime('%Y-%m-%d'), 1, roll='forward').astype(datetime.datetime)
+                            else:
+                                next_work_day = np.busday_offset(now.strftime('%Y-%m-%d'), 0, roll='forward').astype(datetime.datetime)
                             sleep_time = (datetime.datetime(next_work_day.year, next_work_day.month, next_work_day.day, 9, 37) - now).total_seconds()
 
                         logger.info('Today all data spider... Sleep %ss' % sleep_time)
