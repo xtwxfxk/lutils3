@@ -448,7 +448,7 @@ class LStockLoader():
                 try:
                     is_over_today = True
 
-                    if self.cache.size == 0:
+                    if len(self.cache) == 0:
                         logger.error('Stock Codes Empty...')
 
                     for code in self.cache.iterkeys():
