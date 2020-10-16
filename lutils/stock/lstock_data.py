@@ -447,6 +447,10 @@ class LStockLoader():
             while 1:
                 try:
                     is_over_today = True
+
+                    if self.cache.size == 0:
+                        logger.error('Stock Codes Empty...')
+
                     for code in self.cache.iterkeys():
                         h5path = os.path.join(self.save_root, '%s.h5' % code)
 
