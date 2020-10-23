@@ -450,6 +450,16 @@ class LStockLoader():
                     logger.error('Stock Codes Empty...')
 
                 for code in self.cache.iterkeys():
+                    h5path = os.path.join(self.save_root, '%s.h5' % code)
+                    if(os.path.exists(h5path))
+                        now = datetime.datetime.now()
+                        modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
+
+                        start_time = datetime.datetime(now.year, now.month, now.day, 15, 0)
+                        if modify_time > start_time:
+                            logger.info('Today pass %s' % code)
+                            continue
+
                     future.submit(self.fetch_code, code)
 
                 logger.info('Today Over...')
