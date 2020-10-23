@@ -452,6 +452,7 @@ class LStockLoader():
                 for code in self.cache.iterkeys():
                     future.submit(self.fetch_code, code)
 
+                logger.info('Today Over...')
             except KeyboardInterrupt:
                 raise
             except:
