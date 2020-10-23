@@ -451,7 +451,7 @@ class LStockLoader():
 
                 for code in self.cache.iterkeys():
                     h5path = os.path.join(self.save_root, '%s.h5' % code)
-                    if(os.path.exists(h5path))
+                    if(os.path.exists(h5path)):
                         now = datetime.datetime.now()
                         modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(h5path))
 
