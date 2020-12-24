@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 LUTILS_ROOT = os.path.dirname(__file__)
 if not os.path.exists(LUTILS_ROOT):
     LUTILS_ROOT = os.getcwd()
-print(LUTILS_ROOT)
+
 logging.config.fileConfig(os.path.join(LUTILS_ROOT, 'logging.conf'))
 
 
