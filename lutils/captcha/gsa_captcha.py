@@ -2,7 +2,7 @@
 __author__ = 'xtwxfxk'
 
 import io, time
-from ClientForm import ParseFile
+from lutils.ClientForm import ParseFile
 from lutils.lrequest import LRequest
 
 
