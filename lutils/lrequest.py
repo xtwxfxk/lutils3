@@ -269,7 +269,7 @@ class LRequest(object):
 
 
 
-    def open(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], isdecode=False, repeat=3, is_xpath=True):
+    def open(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], is_decode=False, repeat=3, is_xpath=True):
         try:
             self._body = ''
             if self.debuglevel > 0:
@@ -304,7 +304,7 @@ class LRequest(object):
                         response = self._opener.open(url, timeout=timeout)
 
                     self.current_url = response.geturl()
-                    self.body = response, isdecode, is_xpath
+                    self.body = response, is_decode, is_xpath
                     return response
                 except (request.HTTPError, request.URLError, http.client.BadStatusLine, socket.timeout, socket.error, IOError, http.client.IncompleteRead, socks.ProxyConnectionError, socks.SOCKS5Error) as e:
                     repeat = repeat - 1
@@ -328,7 +328,7 @@ class LRequest(object):
             for header in append_header:
                 self._opener.addheaders.remove(header)
 
-    def load(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], isdecode=False, repeat=3, is_xpath=True):
+    def load(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, append_header=[], is_decode=False, repeat=3, is_xpath=True):
         try:
             if isinstance(self.delay, int) and self.delay > 0:
                 time.sleep(self.delay)
@@ -337,7 +337,7 @@ class LRequest(object):
 
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
-            return self.open(url, data, timeout, append_header, isdecode, repeat, is_xpath)
+            return self.open(url, data, timeout, append_header, is_decode, repeat, is_xpath)
         except :
             if self.debuglevel:
                 logger.error(traceback.format_exc())
@@ -363,15 +363,15 @@ class LRequest(object):
         self.body = page_str, '', True
 
 
-    def getForms(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, isdecode=False, repeat=3, is_xpath=False):
-        return self.get_forms_by_url(url, data, timeout, isdecode, repeat, is_xpath)
+    def getForms(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, is_decode=False, repeat=3, is_xpath=False):
+        return self.get_forms_by_url(url, data, timeout, is_decode, repeat, is_xpath)
 
-    def get_forms_by_url(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, isdecode=False, repeat=3, is_xpath=False):
+    def get_forms_by_url(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, is_decode=False, repeat=3, is_xpath=False):
         try:
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
                 timeout = self._timeout
             response = None
-            response = self.open(url, data, timeout, isdecode, repeat, is_xpath)
+            response = self.open(url, data, timeout, is_decode, repeat, is_xpath)
             return ParseFile(io.StringIO(str(BeautifulSoup(self.body, 'lxml')).replace('<br/>', '').replace('<hr/>', '')), response.geturl(), backwards_compat=False)
         except:
             raise
@@ -390,7 +390,7 @@ class LRequest(object):
     @body.setter
     def body(self, params):
         try:
-            response, isdecode, is_xpath = params
+            response, is_decode, is_xpath = params
             body = ''
             self._body = ''
             if isinstance(response, http.client.HTTPResponse): # urllib.addinfourl
@@ -401,7 +401,7 @@ class LRequest(object):
                 else:
                     body = response.read()
 
-                if isdecode:
+                if is_decode:
                     content_type = response.info().get('Content-Type', '')
                     charset = None
                     if content_type.find('charset=') > -1:
