@@ -279,10 +279,10 @@ class LRequest(object):
             if isinstance(url, str):
                 logger.info('Load URL: %s' % url)
 
-                url = url.replace(' ', '%20')
-                and_reg = re.compile('&amp;')
-                while len(re.findall(and_reg, url)) > 0:
-                    url = url.replace('&amp;', '&')
+                # url = url.replace(' ', '%20')
+                # and_reg = re.compile('&amp;')
+                # while len(re.findall(and_reg, url)) > 0:
+                    # url = url.replace('&amp;', '&')
 
             ### logger.info('Load URL: %s' % url.get_full_url())
 
