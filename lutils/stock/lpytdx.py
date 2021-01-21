@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'xtwxfxk'
 
+import time, datetime
+import pandas as pd
 from enum import Enum, unique
 
 from pytdx.hq import TdxHq_API, TDXParams
@@ -19,13 +21,11 @@ category K线种类:
 '''
 
 
-@unique
-class Market(Enum):
+class Market():
     SH = TDXParams.MARKET_SH    # 深圳
     SZ = TDXParams.MARKET_SZ    # 上海
 
-@unique
-class Category(Enum):
+class Category():
     KLINE_TYPE_5MIN = 0         # 5 分钟K 线
     KLINE_TYPE_15MIN = 1        # 15 分钟K 线
     KLINE_TYPE_30MIN = 2        # 30 分钟K 线
@@ -54,61 +54,60 @@ class Category(Enum):
 #     KLINE_TYPE_3MONTH = 10      # 季K 线
 #     KLINE_TYPE_YEARLY = 11      # 年K 线
 
-class LPytdx(object):
+class LTdxHq(TdxHq_API):
 
-    def __init__(self):
-        
-        self.init_pytdx()
 
-    def init_pytdx(self):
-        self.api = TdxHq_API(heartbeat=True)
+    def get_k_data(self, code, start, **kwargs):
+        def __select_market_code(code):
+            code = str(code)
+            if code[0] in ['5', '6', '9'] or code[:3] in ["009", "126", "110", "201", "202", "203", "204"]:
+                return 1
+            return 0
 
-    def connect(self, ip, port=7709): # ip='119.147.212.81'
-        self.api.connect(ip, port)
+        category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
+        market = kwargs.get('market', __select_market_code(code))
+        end = kwargs.get('end', datetime.date.today().strftime('%Y-%m-%d'))
 
-    def calc_daily_count(self, category):
-        daily_count = 1
-        if category == Category.KLINE_TYPE_5MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_5MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_15MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_30MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_1HOUR:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_DAILY:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_WEEKLY:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_MONTHLY:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_EXHQ_1MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_1MIN:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_RI_K:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_3MONTH:
-            daily_count = 1
-        elif category == Category.KLINE_TYPE_YEARLY:
-            daily_count = 1
-        else:
-            daily_count = 1
-        return daily_count
+        return self._get_k_data(code, category, market, start, end)
 
-    def get_k_data(self, code, cateogry, market, start, end):
-        daily_count = 1
-        # cateogry
+    def _get_k_data(self, code, category, market, start, end):
+        start_time = datetime.datetime.strptime(start, '%Y-%m-%d') + datetime.timedelta(hours=9, minutes=30)
+        end_time = datetime.datetime.strptime(end, '%Y-%m-%d') + datetime.timedelta(hours=15)
+
+        start_date = datetime.datetime.strftime(start_time, '%Y-%m-%d %H:%M')
+        end_date = datetime.datetime.strftime(end_time, '%Y-%m-%d %H:%M')
+
+        if start_time > end_time:
+            return None
+
+        _start = 0
+        _count = 800
+        dfs = []
+        while True:
+            _df = self.to_df(self.get_security_bars(category, market, code, _start, _count))
+            dfs.append(_df)
+            _start = _start + _count
+
+            if datetime.datetime.strptime(_df.head(1).at[0, 'datetime'], '%Y-%m-%d %H:%M') < start_time:
+                break
+
+        df = pd.concat(dfs, axis=0).sort_values(by="datetime", ascending=True)
+        df = df.assign(date=df['datetime']).assign(code=str(code))\
+            .set_index('date', drop=False, inplace=False)\
+            .drop(['year', 'month', 'day', 'hour', 'minute', 'datetime'], axis=1)[start_date:end_date]
+
+        return df
+
 
     def get_hosts(self):
         return hq_hosts
 
 if __name__ == '__main__':
     # https://rainx.gitbooks.io/pytdx/content/
-    lpytdx = LPytdx()
+    ltdxhq = LTdxHq(heartbeat=True)
     # print(lpytdx.get_hosts())
-    # lpytdx.connect('119.147.212.81', 7709)
+    ltdxhq.connect('119.147.212.81', 7709)
 
-    print(lpytdx.calc_daily_count())
+    df = ltdxhq.get_k_data(code='603636', start='2019-02-01', category=Category.KLINE_TYPE_15MIN)
+    ltdxhq.disconnect()
+    print(df)
