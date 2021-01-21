@@ -85,9 +85,11 @@ class LTdxHq(TdxHq_API):
         dfs = []
         while True:
             _df = self.to_df(self.get_security_bars(category, market, code, _start, _count))
+            print(_df.shape)
+            if _df.shape[0] < 1:
+                break
             dfs.append(_df)
             _start = _start + _count
-
             if datetime.datetime.strptime(_df.head(1).at[0, 'datetime'], '%Y-%m-%d %H:%M') < start_time:
                 break
 
@@ -107,7 +109,6 @@ if __name__ == '__main__':
     ltdxhq = LTdxHq(heartbeat=True)
     # print(lpytdx.get_hosts())
     ltdxhq.connect('119.147.212.81', 7709)
-
-    df = ltdxhq.get_k_data(code='603636', start='2019-02-01', category=Category.KLINE_TYPE_15MIN)
+    df = ltdxhq.get_k_data(code='603636', start='2013-01-01', category=Category.KLINE_TYPE_RI_K)
     ltdxhq.disconnect()
     print(df)
