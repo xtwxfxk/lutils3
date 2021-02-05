@@ -85,7 +85,7 @@ class LTdxHq(TdxHq_API):
         dfs = []
         while True:
             _df = self.to_df(self.get_security_bars(category, market, code, _start, _count))
-            print(_df.shape)
+            
             if _df.shape[0] < 1:
                 break
             dfs.append(_df)
