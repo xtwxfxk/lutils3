@@ -10,3 +10,4 @@ stockstats
 diskcache
 pillow
 plotly
+pytdx
