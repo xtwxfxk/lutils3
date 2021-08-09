@@ -161,3 +161,11 @@ if __name__ == '__main__':
     ltdxhq = LTdxHq() # heartbeat=True)
     ltdxhq.get_k_data_1min(code='603636', start='2013-01-01')
 
+
+
+    # import tushare as ts
+    # ts.set_token('xxxxx')
+    # pro = ts.pro_api()
+
+    # data = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+    # data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
