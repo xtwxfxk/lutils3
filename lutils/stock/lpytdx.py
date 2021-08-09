@@ -57,6 +57,14 @@ class Category():
 class LTdxHq(TdxHq_API):
 
 
+    def __init__(self, multithread=False, heartbeat=False, auto_retry=False, raise_exception=False, random_connect=False):
+        super(LTdxHq, self).__init__(multithread=multithread, heartbeat=heartbeat, auto_retry=auto_retry, raise_exception=raise_exception)
+        if random_connect:
+            host = random.choice(ltdxhq.get_hosts())
+            self.connect(host[1], host[2])
+        else:
+            self.connect('119.147.212.81', 7709)
+
     def get_k_data(self, code, start, **kwargs):
         def __select_market_code(code):
             code = str(code)
@@ -101,14 +109,55 @@ class LTdxHq(TdxHq_API):
         return df
 
 
+    # KLINE_TYPE_5MIN = 0         # 5 分钟K 线
+    # KLINE_TYPE_15MIN = 1        # 15 分钟K 线
+    # KLINE_TYPE_30MIN = 2        # 30 分钟K 线
+    # KLINE_TYPE_1HOUR = 3        # 1 小时K 线
+    # KLINE_TYPE_DAILY = 4        # 日K 线
+    # KLINE_TYPE_WEEKLY = 5       # 周K 线
+    # KLINE_TYPE_MONTHLY = 6      # 月K 线
+    # KLINE_TYPE_EXHQ_1MIN = 7    # 1 分钟
+    # KLINE_TYPE_1MIN = 8         # 1 分钟K 线
+    # KLINE_TYPE_RI_K = 9         # 日K 线
+    # KLINE_TYPE_3MONTH = 10      # 季K 线
+    # KLINE_TYPE_YEARLY = 11      # 年K 线
+    def get_k_data_1min(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
+
+    def get_k_data_5min(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_5MIN)
+
+    def get_k_data_15min(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_15MIN)
+
+    def get_k_data_30min(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_30MIN)
+
+    def get_k_data_1hour(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1HOUR)
+
+    def get_k_data_daily(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_DAILY)
+
+    def get_k_data_weekly(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_WEEKLY)
+
+    def get_k_data_monthly(self, code, start):
+        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_MONTHLY)
+
     def get_hosts(self):
         return hq_hosts
 
 if __name__ == '__main__':
     # https://rainx.gitbooks.io/pytdx/content/
-    ltdxhq = LTdxHq(heartbeat=True)
-    # print(lpytdx.get_hosts())
-    ltdxhq.connect('119.147.212.81', 7709)
-    df = ltdxhq.get_k_data(code='603636', start='2013-01-01', category=Category.KLINE_TYPE_RI_K)
-    ltdxhq.disconnect()
-    print(df)
+    # ltdxhq = LTdxHq(heartbeat=True)
+    # # print(lpytdx.get_hosts())
+    # ltdxhq.connect('119.147.212.81', 7709)
+    # df = ltdxhq.get_k_data(code='603636', start='2013-01-01', category=Category.KLINE_TYPE_RI_K)
+    # ltdxhq.disconnect()
+    # print(df)
+
+
+    ltdxhq = LTdxHq() # heartbeat=True)
+    ltdxhq.get_k_data_1min(code='603636', start='2013-01-01')
+
