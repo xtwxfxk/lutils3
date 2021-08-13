@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'xtwxfxk'
 
-import time, datetime
+import time, datetime, random
 import pandas as pd
 from enum import Enum, unique
 
