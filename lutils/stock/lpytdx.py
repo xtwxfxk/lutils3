@@ -168,9 +168,9 @@ class LTdxHq(TdxHq_API):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_MONTHLY)
 
 
-    def get_k_data_1min_index_daily(self, code, start='2000-01-01'):
+    def get_k_data_1min_daily(self, code, start='2000-01-01'):
         df = self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
-
+        
 
 
 

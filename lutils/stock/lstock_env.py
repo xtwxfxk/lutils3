@@ -10,7 +10,7 @@ MAX_NUM_SHARES = 2147483647
 MAX_NUM_AMOUNTS = 2147483647
 MAX_SHARE_PRICE = 5000
 MAX_OPEN_POSITIONS = 5
-MAX_STEPS = 40000
+MAX_STEPS = 240 # 40000
 
 INITIAL_ACCOUNT_BALANCE = 10000
 
@@ -20,34 +20,41 @@ class LStockDaily1MinEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, df):
-        super(LStockEnv, self).__init__()
+        super(LStockDaily1MinEnv, self).__init__()
 
+        self.days = []
         self.df = df
+        row_index = 0
+        while row_index < df.shape[0]:
+            self.days.append(df[row_index:row_index+240])
+            row_index = row_index + 240
+        if self.days[-1].shape[0] < 240:
+            self.days.pop(-1)
+
+        self.day = random.choice(self.days)
+        self.current_step = 0
+
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
+        # self.reward_range = (0, 1)
         # self.reward_range = (0, 100)
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
-        self.action_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
+        self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
 
         # Prices contains the OHCL values for the last five prices
         self.observation_space = spaces.Box(
             low=0, high=1, shape=(6, 6), dtype=np.float16)
 
+        self.balance = INITIAL_ACCOUNT_BALANCE
+
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
         frame = np.array([
-            # self.df.loc[self.current_step: self.current_step + 5, 'open'].values / MAX_SHARE_PRICE,
-            # self.df.loc[self.current_step: self.current_step + 5, 'high'].values / MAX_SHARE_PRICE,
-            # self.df.loc[self.current_step: self.current_step + 5, 'low'].values / MAX_SHARE_PRICE,
-            # self.df.loc[self.current_step: self.current_step + 5, 'close'].values / MAX_SHARE_PRICE,
-            # self.df.loc[self.current_step: self.current_step + 5, 'volume'].values / MAX_NUM_SHARES,
-            self.df.iloc[self.current_step: self.current_step + 6]['open'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + 6]['high'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + 6]['low'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + 6]['close'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + 6]['vol'].values / MAX_NUM_SHARES,
-            # self.df.iloc[self.current_step: self.current_step + 6]['amount'].values / MAX_NUM_SHARES,
+            self.day.iloc[self.current_step: self.current_step + 6]['open'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step: self.current_step + 6]['high'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step: self.current_step + 6]['low'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step: self.current_step + 6]['close'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step: self.current_step + 6]['vol'].values / MAX_NUM_SHARES,
         ])
 
         # Append additional data and scale each value to between 0-1
@@ -64,8 +71,7 @@ class LStockDaily1MinEnv(gym.Env):
 
     def _take_action(self, action):
         # Set the current price to a random price within the time step
-        current_price = random.uniform(
-            self.df.iloc[self.current_step]["open"], self.df.iloc[self.current_step]["close"])
+        current_price = self.day.iloc[self.current_step + 6]['close'] + 0.02
 
         action_type = action[0]
         amount = action[1]
@@ -97,19 +103,28 @@ class LStockDaily1MinEnv(gym.Env):
         if self.shares_held == 0:
             self.cost_basis = 0
 
+
     def step(self, action):
         # Execute one time step within the environment
         self._take_action(action)
 
-        self.current_step += 1
-
-        if self.current_step > len(self.df.iloc[:]['open'].values) - 6:
-            self.current_step = 0
+        self.current_step = self.current_step + 1
 
         delay_modifier = (self.current_step / MAX_STEPS)
 
-        reward = self.balance * delay_modifier
-        done = self.net_worth <= 0
+        # reward = self.balance - INITIAL_ACCOUNT_BALANCE
+        # reward = self.balance * delay_modifier
+        # done = self.net_worth <= 0
+        done = self.current_step > (self.day.shape[0]-7) or self.net_worth <= 0
+        # reward = 1 if self.net_worth > self.balance else 0
+        reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        if reward < 0: reward = 0
+        # if done:
+        #     # reward = 1 if self.net_worth > self.balance else 0
+        #     self.balance = self.net_worth
+        # else:
+        #     reward = 0
+
 
         obs = self._next_observation()
 
@@ -125,9 +140,8 @@ class LStockDaily1MinEnv(gym.Env):
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        # Set the current step to a random point within the data frame
-        self.current_step = random.randint(
-            0, len(self.df.iloc[:]['open'].values) - 6)
+        self.day = random.choice(self.days)
+        self.current_step = 0
 
         return self._next_observation()
 
@@ -148,6 +162,7 @@ if __name__ == '__main__':
     import gym
     import json
     import datetime as dt
+    import matplotlib.pyplot as plt
 
     from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy, ActorCriticPolicy, LstmPolicy
     from stable_baselines.common.vec_env import DummyVecEnv
@@ -163,14 +178,21 @@ if __name__ == '__main__':
     # df = ltdxhq.get_k_data_daily('603636')
 
     # The algorithms require a vectorized environment to run
-    env = DummyVecEnv([lambda: LStockEnv(df)])
+    env = DummyVecEnv([lambda: LStockDaily1MinEnv(df)])
 
     model = PPO2(MlpPolicy, env, verbose=1)
     # model = PPO1(LstmPolicy, env, verbose=1)
-    model.learn(total_timesteps=20000)
+    model.learn(total_timesteps=40000)
 
     obs = env.reset()
-    for i in range(500):
+
+    rewards = []
+    for i in range(220):
         action, _states = model.predict(obs)
-        obs, rewards, done, info = env.step(action)
+        obs, reward, done, info = env.step(action)
+        rewards.append(reward)
         env.render()
+
+
+    plt.plot(rewards)
+    plt.show()
