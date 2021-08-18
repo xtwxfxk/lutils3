@@ -65,6 +65,28 @@ class LTdxHq(TdxHq_API):
         else:
             self.connect('119.147.212.81', 7709)
 
+    # def __del__(self):
+    #     print("del")
+    #     # self.disconnect()
+    #     if self.heartbeat_thread and self.heartbeat_thread.is_alive():
+    #         self.stop_event.set()
+
+    #     if self.client:
+    #         print("disconnecting")
+    #         try:
+    #             self.client.shutdown(socket.SHUT_RDWR)
+    #             self.client.close()
+    #             self.client = None
+    #         except Exception as e:
+    #             print(str(e))
+    #             if self.raise_exception:
+    #                 raise TdxConnectionError("disconnect err")
+    #         print("disconnected")
+
+    # def __exit__(self, *args):
+    #     pritn('exit')
+    #     self.disconnect()
+
     def get_k_data(self, code, start, **kwargs):
         def __select_market_code(code):
             code = str(code)
@@ -121,29 +143,36 @@ class LTdxHq(TdxHq_API):
     # KLINE_TYPE_RI_K = 9         # 日K 线
     # KLINE_TYPE_3MONTH = 10      # 季K 线
     # KLINE_TYPE_YEARLY = 11      # 年K 线
-    def get_k_data_1min(self, code, start):
+    def get_k_data_1min(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
 
-    def get_k_data_5min(self, code, start):
+    def get_k_data_5min(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_5MIN)
 
-    def get_k_data_15min(self, code, start):
+    def get_k_data_15min(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_15MIN)
 
-    def get_k_data_30min(self, code, start):
+    def get_k_data_30min(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_30MIN)
 
-    def get_k_data_1hour(self, code, start):
+    def get_k_data_1hour(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1HOUR)
 
-    def get_k_data_daily(self, code, start):
+    def get_k_data_daily(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_DAILY)
 
-    def get_k_data_weekly(self, code, start):
+    def get_k_data_weekly(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_WEEKLY)
 
-    def get_k_data_monthly(self, code, start):
+    def get_k_data_monthly(self, code, start='2000-01-01'):
         return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_MONTHLY)
+
+
+    def get_k_data_1min_index_daily(self, code, start='2000-01-01'):
+        df = self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
+
+
+
 
     def get_hosts(self):
         return hq_hosts
