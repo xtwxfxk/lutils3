@@ -1,15 +1,15 @@
 import random
-import json
 import gym
-from gym import spaces
+from gym import error, spaces
 import pandas as pd
 import numpy as np
+
 
 MAX_ACCOUNT_BALANCE = 2147483647
 MAX_NUM_SHARES = 2147483647
 MAX_NUM_AMOUNTS = 2147483647
 MAX_SHARE_PRICE = 5000
-MAX_OPEN_POSITIONS = 5
+MAX_OPEN_POSITIONS = 60
 MAX_STEPS = 240 # 40000
 
 INITIAL_ACCOUNT_BALANCE = 10000
@@ -31,8 +31,11 @@ class LStockDaily1MinEnv(gym.Env):
         if self.days[-1].shape[0] < 240:
             self.days.pop(-1)
 
-        self.day = random.choice(self.days)
-        self.current_step = 0
+        self.current_step = MAX_OPEN_POSITIONS
+        self.current_day = 1
+        # self.day = random.choice(self.days)
+        self.yesterday = self.days[self.current_day - 1]
+        self.day = pd.concat([self.yesterday[-MAX_OPEN_POSITIONS:], self.days[self.current_day]])
 
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
         # self.reward_range = (0, 1)
@@ -42,36 +45,36 @@ class LStockDaily1MinEnv(gym.Env):
         self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
 
         # Prices contains the OHCL values for the last five prices
-        self.observation_space = spaces.Box(
-            low=0, high=1, shape=(6, 6), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(5, MAX_OPEN_POSITIONS), dtype=np.float16)
 
         self.balance = INITIAL_ACCOUNT_BALANCE
 
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
         frame = np.array([
-            self.day.iloc[self.current_step: self.current_step + 6]['open'].values / MAX_SHARE_PRICE,
-            self.day.iloc[self.current_step: self.current_step + 6]['high'].values / MAX_SHARE_PRICE,
-            self.day.iloc[self.current_step: self.current_step + 6]['low'].values / MAX_SHARE_PRICE,
-            self.day.iloc[self.current_step: self.current_step + 6]['close'].values / MAX_SHARE_PRICE,
-            self.day.iloc[self.current_step: self.current_step + 6]['vol'].values / MAX_NUM_SHARES,
+            self.day.iloc[self.current_step - MAX_OPEN_POSITIONS: self.current_step]['open'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step - MAX_OPEN_POSITIONS: self.current_step]['high'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step - MAX_OPEN_POSITIONS: self.current_step]['low'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step - MAX_OPEN_POSITIONS: self.current_step]['close'].values / MAX_SHARE_PRICE,
+            self.day.iloc[self.current_step - MAX_OPEN_POSITIONS: self.current_step]['vol'].values / MAX_NUM_SHARES,
         ])
 
         # Append additional data and scale each value to between 0-1
-        obs = np.append(frame, [[
-            self.balance / MAX_ACCOUNT_BALANCE,
-            self.max_net_worth / MAX_ACCOUNT_BALANCE,
-            self.shares_held / MAX_NUM_SHARES,
-            self.cost_basis / MAX_SHARE_PRICE,
-            self.total_shares_sold / MAX_NUM_SHARES,
-            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
-        ]], axis=0)
+        # obs = np.append(frame, [[
+        #     self.balance / MAX_ACCOUNT_BALANCE,
+        #     self.max_net_worth / MAX_ACCOUNT_BALANCE,
+        #     self.shares_held / MAX_NUM_SHARES,
+        #     self.cost_basis / MAX_SHARE_PRICE,
+        #     self.total_shares_sold / MAX_NUM_SHARES,
+        #     self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
+        # ]], axis=0)
 
-        return obs
+        # return obs
+        return frame
 
     def _take_action(self, action):
         # Set the current price to a random price within the time step
-        current_price = self.day.iloc[self.current_step + 6]['close'] + 0.02
+        current_price = self.day.iloc[self.current_step]['close'] # + 0.02
 
         action_type = action[0]
         amount = action[1]
@@ -115,7 +118,7 @@ class LStockDaily1MinEnv(gym.Env):
         # reward = self.balance - INITIAL_ACCOUNT_BALANCE
         # reward = self.balance * delay_modifier
         # done = self.net_worth <= 0
-        done = self.current_step > (self.day.shape[0]-7) or self.net_worth <= 0
+        done = self.current_step >= (self.day.shape[0]-MAX_OPEN_POSITIONS) or self.net_worth <= 0
         # reward = 1 if self.net_worth > self.balance else 0
         reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
         if reward < 0: reward = 0
@@ -140,8 +143,15 @@ class LStockDaily1MinEnv(gym.Env):
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        self.day = random.choice(self.days)
-        self.current_step = 0
+        # self.day = random.choice(self.days)
+        self.current_step = MAX_OPEN_POSITIONS
+
+        self.current_day = self.current_day + 1
+        if self.current_day >= len(self.days):
+            self.current_day = 1
+
+        self.yesterday = self.days[self.current_day - 1]
+        self.day = pd.concat([self.yesterday[-MAX_OPEN_POSITIONS:], self.days[self.current_day]])
 
         return self._next_observation()
 
@@ -158,9 +168,10 @@ class LStockDaily1MinEnv(gym.Env):
 
 
 
+
+
 if __name__ == '__main__':
     import gym
-    import json
     import datetime as dt
     import matplotlib.pyplot as plt
 
@@ -173,7 +184,7 @@ if __name__ == '__main__':
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('603636')
+    df = ltdxhq.get_k_data_1min('300142')
     # df = ltdxhq.get_k_data_5min('603636')
     # df = ltdxhq.get_k_data_daily('603636')
 
@@ -182,17 +193,20 @@ if __name__ == '__main__':
 
     model = PPO2(MlpPolicy, env, verbose=1)
     # model = PPO1(LstmPolicy, env, verbose=1)
-    model.learn(total_timesteps=40000)
+    model.learn(total_timesteps=100000)
 
     obs = env.reset()
 
     rewards = []
+    actions = []
     for i in range(220):
         action, _states = model.predict(obs)
         obs, reward, done, info = env.step(action)
         rewards.append(reward)
+        actions.append(action)
         env.render()
 
 
     plt.plot(rewards)
+    plt.plot(actions)
     plt.show()
