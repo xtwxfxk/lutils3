@@ -4,4 +4,4 @@
 lutils.egg-info
 dist
 build
-..log
+*log/
