@@ -3,7 +3,7 @@ import gym
 from gym import error, spaces
 import pandas as pd
 import numpy as np
-
+# from tensorboardX import SummaryWriter
 
 MAX_ACCOUNT_BALANCE = 2147483647
 MAX_NUM_SHARES = 2147483647
@@ -15,6 +15,7 @@ NEXT_OBSERVATION_SIZE = 6
 
 INITIAL_ACCOUNT_BALANCE = 10000
 
+# writer = SummaryWriter('log')
 
 class LStockDailyEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
@@ -24,6 +25,7 @@ class LStockDailyEnv(gym.Env):
         super(LStockDailyEnv, self).__init__()
 
         # self.days = []
+        self.step_index = 1
         self.df = df
         # row_index = 0
         # while row_index < df.shape[0]:
@@ -98,6 +100,8 @@ class LStockDailyEnv(gym.Env):
             self.total_sales_value += shares_sold * current_price
 
         self.net_worth = self.balance + self.shares_held * current_price
+        
+        # writer.add_scalar('Net Worth', self.net_worth, self.step_index)
 
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
@@ -108,6 +112,7 @@ class LStockDailyEnv(gym.Env):
 
     def step(self, action):
         # Execute one time step within the environment
+        self.step_index = self.step_index + 1
         self._take_action(action)
 
         self.current_step = self.current_step + 1
@@ -141,6 +146,8 @@ class LStockDailyEnv(gym.Env):
             reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
         elif action_type < 2: # Sell
             reward = 1 if obs[:-1, 3].mean() <= self.df.iloc[self.current_step]['close'] else 0
+        else:
+            reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
         # reward = 1 if obs[:-1, 3].mean() - self.df.iloc[self.current_step]['close'] > 0 else 0
 
         return obs, reward, done, {}
@@ -205,7 +212,7 @@ if __name__ == '__main__':
     # The algorithms require a vectorized environment to run
     env = DummyVecEnv([lambda: LStockDailyEnv(df)])
 
-    model = PPO2(MlpPolicy, env, verbose=1)
+    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log='log')
     # model = PPO1(LstmPolicy, env, verbose=1)
     model.learn(total_timesteps=100000)
 
