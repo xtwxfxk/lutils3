@@ -218,7 +218,7 @@ if __name__ == '__main__':
     import datetime as dt
     import matplotlib.pyplot as plt
 
-    from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy, ActorCriticPolicy, LstmPolicy
+    from stable_baselines.common.policies import MlpPolicy, CnnPolicy, MlpLstmPolicy, ActorCriticPolicy, LstmPolicy
     from stable_baselines.common.vec_env import DummyVecEnv
     from stable_baselines import PPO2, PPO1, A2C, DQN, TD3, SAC
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('300142') # 300142 603636
+    df = ltdxhq.get_k_data_1min('300142') # 000032 300142 603636 
     ltdxhq.close()
     # df = ltdxhq.get_k_data_5min('603636')
     # df = ltdxhq.get_k_data_daily('603636')
@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
     model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
     # model = PPO1(LstmPolicy, env, verbose=1)
-    model.learn(total_timesteps=20000)
+    model.learn(total_timesteps=100000)
 
     obs = env.reset()
 
@@ -248,8 +248,8 @@ if __name__ == '__main__':
     net_worths = []
     # for i in range(220):
     for i in range(NEXT_OBSERVATION_SIZE, df2.shape[0]):
-        obs = observation(df2, i)
-        action, _states = model.predict(obs)
+        actual_obs = observation(df2, i)
+        action, _states = model.predict(actual_obs)
         action = [action]
         obs, reward, done, info = env.step(action)
         rewards.append(reward)
@@ -259,6 +259,6 @@ if __name__ == '__main__':
 
     plt.plot(rewards, label='rewards')
     # plt.plot(actions, label='actions')
-    plt.plot(net_worths, label="net worth")
+    plt.plot(net_worths, label='net worth')
     plt.legend()
     plt.show()
