@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
     model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
     # model = PPO1(LstmPolicy, env, verbose=1)
-    model.learn(total_timesteps=100000)
+    model.learn(total_timesteps=1000)
 
     obs = env.reset()
 
@@ -257,8 +257,11 @@ if __name__ == '__main__':
         net_worths.append(info[0]['net_worth'])
         env.render()
 
-    plt.plot(rewards, label='rewards')
-    # plt.plot(actions, label='actions')
-    plt.plot(net_worths, label='net worth')
-    plt.legend()
+    fig, ax = plt.subplots()
+    ax.plot(rewards, label='rewards')
+    ax.plot(actions, label='actions')
+    ax.legend()
+    ax2 = ax.twinx()
+    ax2.plot(net_worths, label='net worth')
+    ax2.legend()
     plt.show()
