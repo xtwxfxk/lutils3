@@ -13,7 +13,7 @@ MAX_OPEN_POSITIONS = 60
 MAX_STEPS = 240 # 40000
 NEXT_OBSERVATION_SIZE = 6
 
-INITIAL_ACCOUNT_BALANCE = 10000
+INITIAL_ACCOUNT_BALANCE = 100000
 
 # writer = SummaryWriter('log')
 
@@ -48,7 +48,7 @@ class LStockDailyEnv(gym.Env):
         self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
 
         # Prices contains the OHCL values for the last five prices
-        self.observation_space = spaces.Box(low=0, high=1, shape=(6, NEXT_OBSERVATION_SIZE), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(5, NEXT_OBSERVATION_SIZE), dtype=np.float16)
 
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
@@ -60,25 +60,26 @@ class LStockDailyEnv(gym.Env):
             self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['vol'].values / MAX_NUM_SHARES,
         ])
 
-        # Append additional data and scale each value to between 0-1
-        obs = np.append(frame, [[
-            self.balance / MAX_ACCOUNT_BALANCE,
-            self.max_net_worth / MAX_ACCOUNT_BALANCE,
-            self.shares_held / MAX_NUM_SHARES,
-            self.cost_basis / MAX_SHARE_PRICE,
-            self.total_shares_sold / MAX_NUM_SHARES,
-            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
-        ]], axis=0)
+        return frame
 
-        return obs
+        # Append additional data and scale each value to between 0-1
+        # obs = np.append(frame, [[
+        #     self.balance / MAX_ACCOUNT_BALANCE,
+        #     self.max_net_worth / MAX_ACCOUNT_BALANCE,
+        #     self.shares_held / MAX_NUM_SHARES,
+        #     self.cost_basis / MAX_SHARE_PRICE,
+        #     self.total_shares_sold / MAX_NUM_SHARES,
+        #     self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
+        # ]], axis=0)
+
+        # return obs
 
     def _take_action(self, action):
         # Set the current price to a random price within the time step
         current_price = self.df.iloc[self.current_step]['close'] # + 0.02
-
         action_type = action[0]
         amount = action[1]
-        amount = 1
+        # amount = 1
 
         if action_type < 1:
             # Buy amount % of balance in shares
@@ -100,7 +101,7 @@ class LStockDailyEnv(gym.Env):
             self.total_sales_value += shares_sold * current_price
 
         self.net_worth = self.balance + self.shares_held * current_price
-        
+
         # writer.add_scalar('Net Worth', self.net_worth, self.step_index)
 
         if self.net_worth > self.max_net_worth:
@@ -113,6 +114,7 @@ class LStockDailyEnv(gym.Env):
     def step(self, action):
         # Execute one time step within the environment
         self.step_index = self.step_index + 1
+        shares_held = self.shares_held
         self._take_action(action)
 
         self.current_step = self.current_step + 1
@@ -120,8 +122,7 @@ class LStockDailyEnv(gym.Env):
         if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
             self.current_step = 0
 
-        delay_modifier = (self.current_step / MAX_STEPS)
-
+        # delay_modifier = (self.current_step / MAX_STEPS)
         # reward = self.balance - INITIAL_ACCOUNT_BALANCE
         # reward = self.balance * delay_modifier
         # done = self.net_worth <= 0
@@ -144,13 +145,13 @@ class LStockDailyEnv(gym.Env):
         action_type = action[0]
         if action_type < 1: # Buy
             reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
-        elif action_type < 2: # Sell
-            reward = 1 if obs[:-1, 3].mean() <= self.df.iloc[self.current_step]['close'] else 0
+        elif action_type >= 1 and action_type < 2: # Sell
+            reward = 1 if obs[:-1, 3].mean() <= self.df.iloc[self.current_step]['close'] and shares_held > self.shares_held else 0
         else:
             reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
         # reward = 1 if obs[:-1, 3].mean() - self.df.iloc[self.current_step]['close'] > 0 else 0
 
-        return obs, reward, done, {}
+        return obs, reward, done, {'net_worth': self.net_worth}
 
     def reset(self):
         # Reset the state of the environment to an initial state
@@ -190,6 +191,27 @@ class LStockDailyEnv(gym.Env):
 
 
 
+def observation(df, current_step):
+    frame = np.array([
+        df.iloc[current_step - NEXT_OBSERVATION_SIZE: current_step]['open'].values / MAX_SHARE_PRICE,
+        df.iloc[current_step - NEXT_OBSERVATION_SIZE: current_step]['high'].values / MAX_SHARE_PRICE,
+        df.iloc[current_step - NEXT_OBSERVATION_SIZE: current_step]['low'].values / MAX_SHARE_PRICE,
+        df.iloc[current_step - NEXT_OBSERVATION_SIZE: current_step]['close'].values / MAX_SHARE_PRICE,
+        df.iloc[current_step - NEXT_OBSERVATION_SIZE: current_step]['vol'].values / MAX_NUM_SHARES,
+    ])
+    return frame
+#     # Append additional data and scale each value to between 0-1
+#     obs = np.append(frame, [[
+#         balance / MAX_ACCOUNT_BALANCE,
+#         max_net_worth / MAX_ACCOUNT_BALANCE,
+#         shares_held / MAX_NUM_SHARES,
+#         cost_basis / MAX_SHARE_PRICE,
+#         total_shares_sold / MAX_NUM_SHARES,
+#         total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
+#     ]], axis=0)
+
+#     return obs
+
 
 if __name__ == '__main__':
     import gym
@@ -205,29 +227,38 @@ if __name__ == '__main__':
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('603636') # 300142
+    df = ltdxhq.get_k_data_1min('300142') # 300142 603636
+    ltdxhq.close()
     # df = ltdxhq.get_k_data_5min('603636')
     # df = ltdxhq.get_k_data_daily('603636')
 
+    df1 = df[:-240]
+    df2 = df[-240:]
     # The algorithms require a vectorized environment to run
-    env = DummyVecEnv([lambda: LStockDailyEnv(df)])
+    env = DummyVecEnv([lambda: LStockDailyEnv(df1)])
 
-    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log='log')
+    model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
     # model = PPO1(LstmPolicy, env, verbose=1)
-    model.learn(total_timesteps=100000)
+    model.learn(total_timesteps=20000)
 
     obs = env.reset()
 
     rewards = []
     actions = []
-    for i in range(220):
+    net_worths = []
+    # for i in range(220):
+    for i in range(NEXT_OBSERVATION_SIZE, df2.shape[0]):
+        obs = observation(df2, i)
         action, _states = model.predict(obs)
+        action = [action]
         obs, reward, done, info = env.step(action)
         rewards.append(reward)
         actions.append(action[0][0])
+        net_worths.append(info[0]['net_worth'])
         env.render()
 
     plt.plot(rewards, label='rewards')
-    plt.plot(actions, label='actions')
+    # plt.plot(actions, label='actions')
+    plt.plot(net_worths, label="net worth")
     plt.legend()
     plt.show()
