@@ -265,3 +265,5 @@ if __name__ == '__main__':
     ax2.plot(net_worths, label='net worth')
     ax2.legend()
     plt.show()
+
+    # tensorflow 1.14
