@@ -230,7 +230,7 @@ if __name__ == '__main__':
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('300142') # 000032 300142 603636 
+    df = ltdxhq.get_k_data_1min('000032') # 000032 300142 603636 
     ltdxhq.close()
     # df = ltdxhq.get_k_data_5min('603636')
     # df = ltdxhq.get_k_data_daily('603636')
@@ -241,7 +241,7 @@ if __name__ == '__main__':
     env = DummyVecEnv([lambda: LStockDailyEnv(df1)])
 
     # model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
-    model = PPO('MlpPolicy', env, verbose=1).learn(10000)
+    model = PPO('MlpPolicy', env, verbose=1).learn(20000)
     # model = PPO1(LstmPolicy, env, verbose=1)
     # model.learn(total_timesteps=1000)
 
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     ax.plot(actions, label='actions')
     ax.legend()
     ax2 = ax.twinx()
-    ax2.plot(net_worths, label='net worth')
+    ax2.plot(net_worths, label='net worth', color='red')
     ax2.legend()
     plt.show()
 
