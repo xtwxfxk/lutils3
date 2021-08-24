@@ -222,6 +222,7 @@ if __name__ == '__main__':
     # from stable_baselines.common.vec_env import DummyVecEnv
     # from stable_baselines import PPO2, PPO1, A2C, DQN, TD3, SAC
 
+    # from stable_baselines3.common.policies import MlpPolicy
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
 
