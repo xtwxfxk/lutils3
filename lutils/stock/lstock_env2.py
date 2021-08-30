@@ -46,27 +46,53 @@ class LStockDailyEnv(gym.Env):
         # self.reward_range = (0, 100)
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
-        self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
+        self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float32)
 
         # Prices contains the OHCL values for the last five prices
-        self.observation_space = spaces.Box(low=0, high=1, shape=(5, NEXT_OBSERVATION_SIZE), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(11, NEXT_OBSERVATION_SIZE), dtype=np.float32)
+
+    def seed(self, seed=None):
+        pass
+
 
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
         frame = np.array([
-            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['open'].values / MAX_SHARE_PRICE,
-            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['high'].values / MAX_SHARE_PRICE,
-            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values / MAX_SHARE_PRICE,
-            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values / MAX_SHARE_PRICE,
-            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values / MAX_NUM_SHARES,
-            # self.df['macd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            # self.df['macdh'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            # self.df['macds'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['open'].values,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['high'].values,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values,
+            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['open'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['high'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values / MAX_NUM_SHARES,
+
+            self.df['macd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            self.df['macdh'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            self.df['macds'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['volume_delta'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['open_2_d'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['open_-2_r'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['cr'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['cr-ma1'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # # self.df['cr-ma2'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # # self.df['cr-ma3'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            self.df['kdjk'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            self.df['kdjd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            self.df['kdjj'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # self.df['open_2_sma'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['dma'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['pdi'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['mdi'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['dx'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['adx'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # self.df['adxr'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # # self.df['tema'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            # # self.df['vr'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            # # self.df['vr_6_sma'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+
+            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['open'].values,
+            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['high'].values,
+            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values,
+            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values,
+            # self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values,
         ])
 
         return frame
@@ -128,8 +154,8 @@ class LStockDailyEnv(gym.Env):
 
         self.current_step = self.current_step + 1
 
-        if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
-            self.current_step = 0
+        # if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
+        #     self.current_step = 0
 
         # delay_modifier = (self.current_step / MAX_STEPS)
         # reward = self.balance - INITIAL_ACCOUNT_BALANCE
@@ -145,7 +171,11 @@ class LStockDailyEnv(gym.Env):
         # else:
         #     reward = 0
 
-        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .7
+        if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
+            self.current_step = 0
+            done = True
+        else:
+            done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .7
 
         obs = self._next_observation()
 
@@ -234,6 +264,8 @@ def test_rl():
     # from stable_baselines3.common.policies import MlpPolicy
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
+    from stable_baselines3.common.evaluation import evaluate_policy
+    
     from sklearn import preprocessing
 
     import pandas as pd
@@ -241,11 +273,12 @@ def test_rl():
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('000032') # 000032 300142 603636 
-    # df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
-    min_max_scaler = preprocessing.MinMaxScaler()
-    df = pd.DataFrame(min_max_scaler.fit_transform(df.drop(columns=['date', 'code'])))
-    df.columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
+    df = ltdxhq.get_k_data_1min('603636') # 000032 300142 603636 
+    df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
+
+    # min_max_scaler = preprocessing.MinMaxScaler()
+    # df = pd.DataFrame(min_max_scaler.fit_transform(df.drop(columns=['date', 'code'])))
+    # df.columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
 
     ltdxhq.close()
     # df = ltdxhq.get_k_data_5min('603636')
@@ -256,10 +289,12 @@ def test_rl():
     # The algorithms require a vectorized environment to run
     env = DummyVecEnv([lambda: LStockDailyEnv(df1)])
     # model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
-    model = PPO('MlpPolicy', env, verbose=1, tensorboard_log='log')
+    model = PPO('MlpPolicy', env, verbose=1) # , tensorboard_log='log')
     model.learn(100000)
     # model = PPO1(LstmPolicy, env, verbose=1)
     # model.learn(total_timesteps=1000)
+
+    eval_env = LStockDailyEnv(df2)
 
     env.set_attr('df', df2)
     obs = env.reset()
