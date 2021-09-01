@@ -124,9 +124,8 @@ class LTdxHq(TdxHq_API):
                 break
 
         df = pd.concat(dfs, axis=0).sort_values(by="datetime", ascending=True)
-        df = df.assign(date=df['datetime']).assign(code=str(code))\
-            .set_index('date', drop=False, inplace=False)\
-            .drop(['year', 'month', 'day', 'hour', 'minute', 'datetime'], axis=1)[start_date:end_date]
+        df = df.set_index('datetime', drop=True, inplace=False)\
+            .drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
 
         return df
 
