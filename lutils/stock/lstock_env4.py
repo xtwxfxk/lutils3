@@ -3,6 +3,7 @@ import gym
 from gym import error, spaces
 import pandas as pd
 import numpy as np
+from enum import Enum
 from stockstats import StockDataFrame
 # from tensorboardX import SummaryWriter
 
@@ -12,11 +13,16 @@ MAX_NUM_AMOUNTS = 2147483647
 MAX_SHARE_PRICE = 5000
 MAX_OPEN_POSITIONS = 60
 MAX_STEPS = 240 # 40000
-NEXT_OBSERVATION_SIZE = 6
+NEXT_OBSERVATION_SIZE = 10
 
 INITIAL_ACCOUNT_BALANCE = 10000
 
 # writer = SummaryWriter('log')
+
+class Actions(Enum):
+    Hold = 0
+    Sell = 1
+    Buy = 2
 
 class LStockDailyEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
@@ -47,7 +53,8 @@ class LStockDailyEnv(gym.Env):
         # self.reward_range = (0, 100)
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
-        self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float32)
+        # self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float32)
+        self.action_space = spaces.Discrete(len(Actions))
 
         # Prices contains the OHCL values for the last five prices
         self.observation_space = spaces.Box(low=0, high=1, shape=(11, NEXT_OBSERVATION_SIZE), dtype=np.float32)
@@ -113,14 +120,14 @@ class LStockDailyEnv(gym.Env):
     def _take_action(self, action):
         # Set the current price to a random price within the time step
         current_price = self.df.iloc[self.current_step]['close'] # + 0.02
-        action_type = action[0]
-        amount = action[1]
+        # action_type = action[0]
+        # amount = action[1]
         # amount = 1
 
-        if action_type < 1:
+        if action == Actions.Buy.value:
             # Buy amount % of balance in shares
             total_possible = int(self.balance / current_price)
-            shares_bought = int(total_possible * amount)
+            shares_bought = int(total_possible)
             prev_cost = self.cost_basis * self.shares_held
             additional_cost = shares_bought * current_price
 
@@ -128,9 +135,9 @@ class LStockDailyEnv(gym.Env):
             self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
             self.shares_held += shares_bought
 
-        elif action_type < 2:
+        elif action == Actions.Sell.value:
             # Sell amount % of shares held
-            shares_sold = int(self.shares_held * amount)
+            shares_sold = int(self.shares_held)
             self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
@@ -185,10 +192,9 @@ class LStockDailyEnv(gym.Env):
 
         reward = 0
 
-        action_type = action[0]
-        if action_type < 1: # Buy
+        if action == Actions.Buy.value: # Buy
             reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
-        elif action_type >= 1 and action_type < 2: # Sell
+        elif action == Actions.Sell.value: # Sell
             reward = 1 if obs[:-1, 3].mean() <= self.df.iloc[self.current_step]['close'] and shares_held > self.shares_held else 0
         else:
             reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
@@ -280,7 +286,7 @@ def test_rl():
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('600519') # 000032 300142 603636 600519
+    # df = ltdxhq.get_k_data_1min('600519') # 000032 300142 603636 600519
     df = ltdxhq.get_k_data_daily('600519') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
 
@@ -327,6 +333,9 @@ def test_rl():
 
     # print(mean_reward)
 
+    model.save('ppo_stock')
+    model = PPO.load('ppo_stock')
+
     eval_env = DummyVecEnv([lambda: LStockDailyEnv(df2, True)])
     obs = eval_env.reset()
 
@@ -341,14 +350,14 @@ def test_rl():
         #     obs[0, :] = new_obs
         # else:
         #     obs = new_obs
-        action_type = action[0][0]
-        if action_type < 1: # Buy
-            actions.append(1)
-        elif action_type >= 1 and action_type < 2: # Sell
-            actions.append(2)
-        else:
-            actions.append(0)
 
+        # if action[0] < Actions.Buy: # Buy
+        #     actions.append(1)
+        # elif action[0] < Actions.Sell: # Sell
+        #     actions.append(2)
+        # else:
+        #     actions.append(0)
+        actions.append(action[0])
         eval_env.render()
 
     # plt.plot(net_worths)
