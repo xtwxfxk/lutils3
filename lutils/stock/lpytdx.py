@@ -87,7 +87,7 @@ class LTdxHq(TdxHq_API):
     #     pritn('exit')
     #     self.disconnect()
 
-    def get_k_data(self, code, start, **kwargs):
+    def get_k_data(self, code, start, end, **kwargs):
         def __select_market_code(code):
             code = str(code)
             if code[0] in ['5', '6', '9'] or code[:3] in ["009", "126", "110", "201", "202", "203", "204"]:
@@ -96,7 +96,7 @@ class LTdxHq(TdxHq_API):
 
         category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
         market = kwargs.get('market', __select_market_code(code))
-        end = kwargs.get('end', datetime.date.today().strftime('%Y-%m-%d'))
+        end = end if end is not None else datetime.date.today().strftime('%Y-%m-%d')
 
         return self._get_k_data(code, category, market, start, end)
 
@@ -142,33 +142,33 @@ class LTdxHq(TdxHq_API):
     # KLINE_TYPE_RI_K = 9         # 日K 线
     # KLINE_TYPE_3MONTH = 10      # 季K 线
     # KLINE_TYPE_YEARLY = 11      # 年K 线
-    def get_k_data_1min(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
+    def get_k_data_1min(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN)
 
-    def get_k_data_5min(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_5MIN)
+    def get_k_data_5min(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_5MIN)
 
-    def get_k_data_15min(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_15MIN)
+    def get_k_data_15min(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_15MIN)
 
-    def get_k_data_30min(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_30MIN)
+    def get_k_data_30min(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_30MIN)
 
-    def get_k_data_1hour(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1HOUR)
+    def get_k_data_1hour(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1HOUR)
 
-    def get_k_data_daily(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_DAILY)
+    def get_k_data_daily(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_DAILY)
 
-    def get_k_data_weekly(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_WEEKLY)
+    def get_k_data_weekly(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_WEEKLY)
 
-    def get_k_data_monthly(self, code, start='2000-01-01'):
-        return self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_MONTHLY)
+    def get_k_data_monthly(self, code, start='2000-01-01', end=None):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY)
 
 
-    def get_k_data_1min_daily(self, code, start='2000-01-01'):
-        df = self.get_k_data(code=code, start=start, category=Category.KLINE_TYPE_1MIN)
+    def get_k_data_1min_daily(self, code, start='2000-01-01', end=None):
+        df = self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN)
         
 
 
