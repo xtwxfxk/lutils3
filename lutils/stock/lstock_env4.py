@@ -59,6 +59,7 @@ class LStockDailyEnv(gym.Env):
             self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values / MAX_SHARE_PRICE,
             self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values / MAX_SHARE_PRICE,
             self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values / MAX_NUM_SHARES,
+            # self.df['close'].pct_change().fillna(0)[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE],
 
             self.df['macd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
             self.df['macdh'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
@@ -203,7 +204,7 @@ def test_rl():
 
     ltdxhq = LTdxHq()
     # df = ltdxhq.get_k_data_1min('600519') # 000032 300142 603636 600519
-    df = ltdxhq.get_k_data_daily('300142', end='2019-01-01') # 000032 300142 603636 600519
+    df = ltdxhq.get_k_data_daily('603636', end='2019-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
 
     # min_max_scaler = preprocessing.MinMaxScaler()

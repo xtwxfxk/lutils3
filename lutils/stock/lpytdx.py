@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'xtwxfxk'
 
-import time, datetime, random
+import time, datetime, random, functools
 import pandas as pd
 from enum import Enum, unique
 
@@ -53,6 +53,30 @@ class Category():
 #     KLINE_TYPE_RI_K = 9         # 日K 线
 #     KLINE_TYPE_3MONTH = 10      # 季K 线
 #     KLINE_TYPE_YEARLY = 11      # 年K 线
+
+
+def reindex_datetime(func):
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        datas = func(*args, **kwargs)
+        datas = datas.set_index(datas['datetime'], drop=True, inplace=False)
+        datas = datas.drop(['date', 'datetime'], axis=1)
+
+        return datas
+
+    return wrapped
+
+def reindex_date_datetime(func):
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        datas = func(*args, **kwargs)
+        datas = datas.set_index([datas['date'], datas['datetime']], drop=True, inplace=False)
+        datas = datas.drop(['date', 'datetime'], axis=1)
+        return datas
+
+    return wrapped
 
 class LTdxHq(TdxHq_API):
 
@@ -124,11 +148,15 @@ class LTdxHq(TdxHq_API):
                 break
 
         df = pd.concat(dfs, axis=0).sort_values(by="datetime", ascending=True)
-        df = df.set_index('datetime', drop=True, inplace=False)\
-            .drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
+        # df = df.set_index('datetime', drop=True, inplace=False)\
+        #     .drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
+
+        # df = df.set_index('datetime', drop=True, inplace=False).drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
+        df['date'] = df[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1)
+        df = df.drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)
+        df = df.loc[(df['datetime'] >= start_date) & (df['datetime'] < end_date)]
 
         return df
-
 
     # KLINE_TYPE_5MIN = 0         # 5 分钟K 线
     # KLINE_TYPE_15MIN = 1        # 15 分钟K 线
@@ -142,35 +170,37 @@ class LTdxHq(TdxHq_API):
     # KLINE_TYPE_RI_K = 9         # 日K 线
     # KLINE_TYPE_3MONTH = 10      # 季K 线
     # KLINE_TYPE_YEARLY = 11      # 年K 线
+    @reindex_date_datetime
     def get_k_data_1min(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN)
 
+    @reindex_date_datetime
     def get_k_data_5min(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_5MIN)
 
+    @reindex_date_datetime
     def get_k_data_15min(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_15MIN)
 
+    @reindex_date_datetime
     def get_k_data_30min(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_30MIN)
 
+    @reindex_date_datetime
     def get_k_data_1hour(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1HOUR)
 
+    @reindex_datetime
     def get_k_data_daily(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_DAILY)
 
+    @reindex_datetime
     def get_k_data_weekly(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_WEEKLY)
 
+    @reindex_datetime
     def get_k_data_monthly(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY)
-
-
-    def get_k_data_1min_daily(self, code, start='2000-01-01', end=None):
-        df = self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN)
-        
-
 
 
     def get_hosts(self):
