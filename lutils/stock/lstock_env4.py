@@ -54,16 +54,16 @@ class LStockDailyEnv(gym.Env):
         #     self.df[:-self.current_step +].describe()
 
         frame = np.array([ # 11 * 10
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['open'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['high'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['low'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['close'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE]['volume'].values / MAX_NUM_SHARES,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['open'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['high'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['low'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['close'].values / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['volume'].values / MAX_NUM_SHARES,
             # self.df['close'].pct_change().fillna(0)[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE],
 
-            self.df['macd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df['macdh'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df['macds'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
+            self.df['macd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['macdh'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['macds'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
             # # self.df['volume_delta'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
             # # self.df['open_2_d'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
             # # self.df['open_-2_r'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
@@ -71,11 +71,11 @@ class LStockDailyEnv(gym.Env):
             # # self.df['cr-ma1'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
             # # self.df['cr-ma2'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
             # # self.df['cr-ma3'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
-            self.df['kdjk'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df['kdjd'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df['kdjj'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].values,
-            self.df['rsi_6'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
-            self.df['rsi_12'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
+            self.df['kdjk'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['kdjd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['kdjj'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['rsi_6'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['rsi_12'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
             # self.df['open_2_sma'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
             # self.df['dma'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
             # self.df['pdi'][self.current_step: self.current_step + NEXT_OBSERVATION_SIZE].fillna(0).values,
@@ -136,21 +136,24 @@ class LStockDailyEnv(gym.Env):
         shares_held = self.shares_held
         self._take_action(action)
 
-        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9
+        self.current_step = self.current_step + 1
+
+        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or self.current_step > self.step_range.stop
 
         obs = self._next_observation()
 
         reward = 0
-
         if self.df is not None:
-            self.current_step = random.randint(0, self.df.shape[0] - NEXT_OBSERVATION_SIZE)
-
             if action == Actions.Buy.value: # Buy
                 reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
             elif action == Actions.Sell.value: # Sell
                 reward = self.df.iloc[self.current_step]['close'] - self.df.iloc[self.current_step + 1]['close']
             else: # Hold
                 reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+
+        if done:
+            reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
+
 
         return obs, reward, done, {'net_worth': self.net_worth, 'current_step': self.current_step}
 
@@ -163,10 +166,11 @@ class LStockDailyEnv(gym.Env):
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        if self.df is None:
-            self.current_step = 0
-        else:
-            self.current_step = random.randint(0, self.df.shape[0] - NEXT_OBSERVATION_SIZE)
+        date_index = np.random.choice(self.df.index.unique(level=0)[1:-1])
+        self.day = self.df.loc[date_index]
+
+        self.step_range = self.df.index.get_loc(date_index)
+        self.current_step = self.step_range.start
 
         return self._next_observation()
 
@@ -203,20 +207,24 @@ def test_rl():
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    # df = ltdxhq.get_k_data_1min('600519') # 000032 300142 603636 600519
-    df = ltdxhq.get_k_data_daily('603636', end='2019-01-01') # 000032 300142 603636 600519
+    code = '600519' # 000032 300142 603636 600519
+    df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
+    # df = ltdxhq.get_k_data_daily('603636', end='2019-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
 
     # min_max_scaler = preprocessing.MinMaxScaler()
     # df = pd.DataFrame(min_max_scaler.fit_transform(df.drop(columns=['date', 'code'])))
     # df.columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
 
+    df_eval = ltdxhq.get_k_data_1min(code, start='2021-09-01')
+    df_eval = StockDataFrame(df_eval.rename(columns={'vol': 'volume'}))
+
     ltdxhq.close()
     # df = ltdxhq.get_k_data_5min('603636')
     # df = ltdxhq.get_k_data_daily('603636')
 
-    df1 = df[:-240]
-    df2 = df[-240:]
+    # df1 = df[:-240]
+    # df2 = df[-240:]
     # The algorithms require a vectorized environment to run
     env = DummyVecEnv([lambda: LStockDailyEnv(df)])
     # model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
@@ -253,7 +261,7 @@ def test_rl():
     model.save('ppo_stock')
     # model = PPO.load('ppo_stock')
 
-    eval_env = DummyVecEnv([lambda: LStockDailyEnv(df2)])
+    eval_env = DummyVecEnv([lambda: LStockDailyEnv(df_eval)])
     obs = eval_env.reset()
 
     net_worths = []
@@ -277,18 +285,18 @@ def test_rl():
         actions.append(action[0])
         eval_env.render()
 
-    # plt.plot(net_worths)
-    # plt.plot(actions)
-    # plt.show()
-
-    fig, ax = plt.subplots()
-    # ax.plot(rewards, label='rewards')
-    ax.plot(actions, '.', label='actions')
-    # ax.legend()
-    ax2 = ax.twinx()
-    ax2.plot(net_worths, label='net worth', color='red')
-    ax2.legend()
+    plt.plot(net_worths)
+    plt.plot(actions)
     plt.show()
+
+    # fig, ax = plt.subplots()
+    # # ax.plot(rewards, label='rewards')
+    # ax.plot(actions, '.', label='actions')
+    # # ax.legend()
+    # ax2 = ax.twinx()
+    # ax2.plot(net_worths, label='net worth', color='red')
+    # ax2.legend()
+    # plt.show()
 
     # tensorflow 2.6
 
