@@ -104,28 +104,22 @@ class LStockDailyEnv(gym.Env):
         # amount = action[1]
         # amount = 1
 
-        exchange_rate = 0.00015
-
         if action == Actions.Buy.value:
             # Buy amount % of balance in shares
-            current_price = (current_price + 0.02) * 100
+            current_price = current_price + 0.02
             total_possible = int(self.balance / current_price)
             shares_bought = int(total_possible)
             prev_cost = self.cost_basis * self.shares_held
             additional_cost = shares_bought * current_price
 
-            if self.balance < additional_cost * (1 + exchange_rate):
-                additional_cost = (shares_bought - 1) * current_price
-
-            self.balance -= additional_cost * (1 + exchange_rate)
+            self.balance -= additional_cost
             self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
             self.shares_held += shares_bought
 
         elif action == Actions.Sell.value:
-            current_price = (current_price - 0.02) * 100
+            current_price = current_price - 0.02
             shares_sold = int(self.shares_held)
-            
-            self.balance += shares_sold * current_price * (1 - exchange_rate)
+            self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
             self.total_sales_value += shares_sold * current_price
@@ -215,7 +209,7 @@ def test_rl():
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    code = '000032' # 000032 300142 603636 600519
+    code = '600519' # 000032 300142 603636 600519
     df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
     # df = ltdxhq.get_k_data_daily('603636', end='2019-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))

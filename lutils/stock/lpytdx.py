@@ -55,12 +55,12 @@ class Category():
 #     KLINE_TYPE_YEARLY = 11      # 年K 线
 
 
-def reindex_datetime(func):
+def reindex_date(func):
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         datas = func(*args, **kwargs)
-        datas = datas.set_index(datas['datetime'], drop=True, inplace=False)
+        datas = datas.set_index(datas['date'], drop=True, inplace=False)
         datas = datas.drop(['date', 'datetime'], axis=1)
 
         return datas
@@ -188,15 +188,15 @@ class LTdxHq(TdxHq_API):
     def get_k_data_1hour(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1HOUR)
 
-    @reindex_datetime
+    @reindex_date
     def get_k_data_daily(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_DAILY)
 
-    @reindex_datetime
+    @reindex_date
     def get_k_data_weekly(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_WEEKLY)
 
-    @reindex_datetime
+    @reindex_date
     def get_k_data_monthly(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY)
 
