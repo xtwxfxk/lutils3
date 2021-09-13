@@ -106,6 +106,7 @@ class LStockDailyEnv(gym.Env):
 
         if action == Actions.Buy.value:
             # Buy amount % of balance in shares
+            current_price = current_price + 0.02
             total_possible = int(self.balance / current_price)
             shares_bought = int(total_possible)
             prev_cost = self.cost_basis * self.shares_held
@@ -116,6 +117,7 @@ class LStockDailyEnv(gym.Env):
             self.shares_held += shares_bought
 
         elif action == Actions.Sell.value:
+            current_price = current_price - 0.02
             shares_sold = int(self.shares_held)
             self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
