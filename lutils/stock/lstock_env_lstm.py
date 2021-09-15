@@ -1,4 +1,4 @@
-import random
+import random, datetime
 import gym
 from gym import error, spaces
 import pandas as pd
@@ -13,7 +13,7 @@ MAX_OPEN_POSITIONS = 60
 MAX_STEPS = 240 # 40000
 NEXT_OBSERVATION_SIZE = 5
 
-INITIAL_ACCOUNT_BALANCE = 100000
+INITIAL_ACCOUNT_BALANCE = 10000
 
 # writer = SummaryWriter('log')
 
@@ -22,57 +22,20 @@ class LStockDailyEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, is_eval=False):
+    def __init__(self, df):
         super(LStockDailyEnv, self).__init__()
 
-        # self.days = []
         self.step_index = 1
 
-        self.split_days(df)
-        self.df = random.choice(self.dfs)
-        print(self.df)
-        # self.df = df
+        self.df = df
 
-        self.is_eval = is_eval
-        # row_index = 0
-        # while row_index < df.shape[0]:
-        #     self.days.append(df[row_index:row_index+240])
-        #     row_index = row_index + 240
-        # if self.days[-1].shape[0] < 240:
-        #     self.days.pop(-1)
+        self.current_step = NEXT_OBSERVATION_SIZE
 
-        # self.current_step = 0
-        # self.current_day = 1
-        # # self.day = random.choice(self.days)
-        # self.yesterday = self.days[self.current_day - 1]
-        # self.day = pd.concat([self.yesterday[:], self.days[self.current_day]])
-
-        # self.reward_range = (0, MAX_ACCOUNT_BALANCE)
-        # self.reward_range = (0, 1)
-        # self.reward_range = (0, 100)
         self.reward_range = (-np.inf, np.inf)
 
-        # Actions of the format Buy x%, Sell x%, Hold, etc.
         self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
 
-        # Prices contains the OHCL values for the last five prices
-        self.observation_space = spaces.Box(low=0, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float16)
-
-    def split_days(self, df):
-
-        self.dfs = []
-        row_index = 0
-        while row_index < df.shape[0]:
-            day = df[row_index:row_index+240]
-            if len(self.dfs) < 1:
-                day = pd.concat([pd.DataFrame(np.zeros([NEXT_OBSERVATION_SIZE, day.shape[1]]), columns=day.columns), day])
-            else:
-                day = pd.concat([self.dfs[-1][-NEXT_OBSERVATION_SIZE:], day])
-            self.dfs.append(day)
-            row_index = row_index + 240
-
-        # if self.dfs[-1].shape[0] < 240:
-        #     self.dfs.pop(-1)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float16)
 
 
     def _next_observation(self):
@@ -115,42 +78,24 @@ class LStockDailyEnv(gym.Env):
             self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['vol'].values / MAX_NUM_SHARES,
             self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['amount'].values / MAX_NUM_SHARES,
 
-            self.df['macd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
-            self.df['macdh'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
-            self.df['macds'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
-            self.df['kdjk'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
-            self.df['kdjd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
-            self.df['kdjj'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].values,
+            self.df['macd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['macdh'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['macds'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['kdjk'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['kdjd'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
+            self.df['kdjj'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
 
             self.df['rsi_6'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
             self.df['rsi_12'][self.current_step - NEXT_OBSERVATION_SIZE: self.current_step].fillna(0).values,
 
         ])
 
-        # print(frame)
-        # print(frame.shape)
-        # print(self.df['kdjj'])
-
         return frame
 
-        # Append additional data and scale each value to between 0-1
-        # obs = np.append(frame, [[
-        #     self.balance / MAX_ACCOUNT_BALANCE,
-        #     self.max_net_worth / MAX_ACCOUNT_BALANCE,
-        #     self.shares_held / MAX_NUM_SHARES,
-        #     self.cost_basis / MAX_SHARE_PRICE,
-        #     self.total_shares_sold / MAX_NUM_SHARES,
-        #     self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
-        # ]], axis=0)
-
-        # return obs
-
     def _take_action(self, action):
-        # Set the current price to a random price within the time step
         current_price = self.df.iloc[self.current_step]['close'] # + 0.02
         action_type = action[0]
         amount = action[1]
-        # amount = 1
 
         if action_type < 1:
             # Buy amount % of balance in shares
@@ -173,8 +118,6 @@ class LStockDailyEnv(gym.Env):
 
         self.net_worth = self.balance + self.shares_held * current_price
 
-        # writer.add_scalar('Net Worth', self.net_worth, self.step_index)
-
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
 
@@ -190,44 +133,22 @@ class LStockDailyEnv(gym.Env):
 
         self.current_step = self.current_step + 1
 
-        # if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
-        #     self.current_step = 0
-
-        # delay_modifier = (self.current_step / MAX_STEPS)
-        # reward = self.balance - INITIAL_ACCOUNT_BALANCE
-        # reward = self.balance * delay_modifier
-        # done = self.net_worth <= 0
-        # done = self.current_step >= (self.day.shape[0]-MAX_OPEN_POSITIONS) or self.net_worth <= 0
-        # reward = 1 if self.net_worth > self.balance else 0
-        # reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        # if reward < 0: reward = 0
-        # if done:
-        #     # reward = 1 if self.net_worth > self.balance else 0
-        #     self.balance = self.net_worth
-        # else:
-        #     reward = 0
-        # done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .7
-
-        done = self.current_step >= (self.df.shape[0] - 1) or self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9
+        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4
 
         obs = self._next_observation()
 
         reward = 0
 
         action_type = action[0]
-        # if action_type < 1: # Buy
-        #     reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] else 0
-        # elif action_type >= 1 and action_type < 2: # Sell
-        #     reward = 1 if obs[:-1, 3].mean() <= self.df.iloc[self.current_step]['close'] and shares_held > self.shares_held else 0
-        # else: # Hold
-        #     reward = 1 if obs[:-1, 3].mean() >= self.df.iloc[self.current_step]['close'] and self.shares_held > 0 else 0
-        # reward = 1 if obs[:-1, 3].mean() - self.df.iloc[self.current_step]['close'] > 0 else 0
         if action_type < 1: # Buy
             reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
         elif action_type >= 1 and action_type < 2: # Sell
             reward = self.df.iloc[self.current_step]['close'] - self.df.iloc[self.current_step + 1]['close']
         else: # Hold
             reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+
+        if done:
+            reward = (self.net_worth - INITIAL_ACCOUNT_BALANCE) * 10
 
         return obs, reward, done, {'net_worth': self.net_worth}
 
@@ -241,19 +162,10 @@ class LStockDailyEnv(gym.Env):
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        # self.day = random.choice(self.days)
-        # self.current_step = MAX_OPEN_POSITIONS
-
-        # self.current_day = self.current_day + 1
-        # if self.current_day >= len(self.days):
-        #     self.current_day = 1
-
-        # self.yesterday = self.days[self.current_day - 1]
-        # self.day = pd.concat([self.yesterday[-MAX_OPEN_POSITIONS:], self.days[self.current_day]])
-
-        # self.current_step = random.randint(0, self.df.shape[0] - NEXT_OBSERVATION_SIZE)
-        # self.current_step = 0
-        self.current_step = NEXT_OBSERVATION_SIZE
+        if self.current_step + 5 >= self.df.shape[0]:
+            self.current_step = NEXT_OBSERVATION_SIZE
+        # else:
+            # self.current_step = self.current_step + 1
 
         return self._next_observation()
 
@@ -284,42 +196,35 @@ def test2():
 
     from lutils.stock import LTdxHq
 
+    code = '603636' # 000032 300142 603636 600519
     ltdxhq = LTdxHq()
-    df = ltdxhq.get_k_data_1min('603636') # 000032 300142 603636 
+    # df = ltdxhq.get_k_data_1min('603636') # 000032 300142 603636 600519
     # df = ltdxhq.get_k_data_5min('603636')
-    # df = ltdxhq.get_k_data_daily('603636')
+    df = ltdxhq.get_k_data_daily(code, end='2020-01-01')
+    eval_df = ltdxhq.get_k_data_daily(code, start='2020-01-01')
     ltdxhq.close()
 
     df = StockDataFrame(df) # .rename(columns={'vol': 'volume'}))
-
-    # df = df.rename(columns={'open': 'Open', 'close': 'Close', 'high': 'High', 'low': 'Low', 'vol': 'Volume'})
-    df.index = pd.to_datetime(df.index)
-    df1 = df[:-240]
-    df2 = df[-240:]
-
-    # The algorithms require a vectorized environment to run
-    env = DummyVecEnv([lambda: LStockDailyEnv(df1)])
-    eval_env = DummyVecEnv([lambda: LStockDailyEnv(df2)])
+    env = DummyVecEnv([lambda: LStockDailyEnv(df)])
 
     # policy_kwargs = dict(net_arch=[64, 'lstm', dict(vf=[128, 128, 128], pi=[64, 64])])
     policy_kwargs = dict(net_arch=[128, 'lstm', dict(vf=[256, 256], pi=[256, 256])])
     
     model = A2C('MlpLstmPolicy', env, verbose=1, policy_kwargs=policy_kwargs)
-    model.learn(total_timesteps=20000)
+    model.learn(total_timesteps=100000)
+    model.save('ppo_stock')
 
+    eval_env = DummyVecEnv([lambda: LStockDailyEnv(StockDataFrame(eval_df))])
     # episode_rewards, _  = evaluate_policy(model, eval_env, n_eval_episodes=1, render=True, return_episode_rewards=True) # EVAL_EPS
-    # print(mean_reward)
 
-    is_recurrent = model.policy.recurrent
+    # is_recurrent = model.policy.recurrent
     obs = eval_env.reset()
-    # if is_recurrent:
-    #     zero_completed_obs = np.zeros((model.n_envs,) + model.observation_space.shape)
-    #     zero_completed_obs[0, :] = obs
-    #     obs = zero_completed_obs
 
     net_worths = []
+    actions = []
     done, state = False, None
-    while not done:
+    # while not done:
+    for _ in range(NEXT_OBSERVATION_SIZE, eval_df.shape[0]):
         action, state = model.predict(obs, state=state, deterministic=True)
         obs, reward, done, _info = eval_env.step(action)
         net_worths.append(_info[0]['net_worth'])
@@ -327,12 +232,19 @@ def test2():
         #     obs[0, :] = new_obs
         # else:
         #     obs = new_obs
+
+        # if action[0] < Actions.Buy: # Buy
+        #     actions.append(1)
+        # elif action[0] < Actions.Sell: # Sell
+        #     actions.append(2)
+        # else:
+        #     actions.append(0)
+        actions.append(action[0])
         eval_env.render()
 
+    print(net_worths)
     plt.plot(net_worths)
     plt.show()
-
-    # obs = env.reset()
 
     # rewards = []
     # actions = []

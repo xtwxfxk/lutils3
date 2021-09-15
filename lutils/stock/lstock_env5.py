@@ -23,6 +23,7 @@ class Actions(Enum):
     Hold = 0
     Sell = 1
     Buy = 2
+    
 
 class LStockDailyEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
@@ -32,6 +33,7 @@ class LStockDailyEnv(gym.Env):
         super(LStockDailyEnv, self).__init__()
 
         self.df = df
+        self.current_step = NEXT_OBSERVATION_SIZE
 
         # self.reward_range = (0, MAX_ACCOUNT_BALANCE)
         # self.reward_range = (0, 1)
@@ -40,7 +42,7 @@ class LStockDailyEnv(gym.Env):
 
         self.action_space = spaces.Discrete(len(Actions))
 
-        self.observation_space = spaces.Box(low=0, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float32)
 
     def seed(self, seed=None):
         pass
@@ -111,6 +113,7 @@ class LStockDailyEnv(gym.Env):
 
         exchange_rate = 0.00015
 
+        result = False
         if action == Actions.Buy.value:
             # Buy amount % of balance in shares
             current_price = current_price + 0.02
@@ -119,6 +122,8 @@ class LStockDailyEnv(gym.Env):
             prev_cost = self.cost_basis * self.shares_held
             additional_cost = shares_bought * current_price
 
+            if shares_bought > 0:
+                result = True
             self.balance -= additional_cost
             self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
             self.shares_held += shares_bought
@@ -126,6 +131,8 @@ class LStockDailyEnv(gym.Env):
         elif action == Actions.Sell.value:
             current_price = current_price - 0.02
             shares_sold = int(self.shares_held)
+            if shares_sold > 0:
+                result = True
             self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
@@ -136,13 +143,14 @@ class LStockDailyEnv(gym.Env):
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
 
+        return result
         # if self.shares_held == 0:
         #     self.cost_basis = 0
 
 
     def step(self, action):
 
-        self._take_action(action)
+        result = self._take_action(action)
 
         self.current_step = self.current_step + 1
 
@@ -153,14 +161,22 @@ class LStockDailyEnv(gym.Env):
         reward = 0
         if self.df is not None:
             if action == Actions.Buy.value: # Buy
-                reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+                reward = (self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close'])
+                # reward = 0
+                if not result:
+                    reward = -reward
             elif action == Actions.Sell.value: # Sell
                 reward = self.df.iloc[self.current_step]['close'] - self.df.iloc[self.current_step + 1]['close']
+                if not result:
+                    reward = -reward
             else: # Hold
-                reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+                # reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+                if self.shares_held < 1:
+                    reward = -100
+                # reward = 0
 
         if done:
-            reward = (self.net_worth - INITIAL_ACCOUNT_BALANCE) * 10
+            reward = (self.net_worth - INITIAL_ACCOUNT_BALANCE)
 
         return obs, reward, done, {'net_worth': self.net_worth, 'current_step': self.current_step}
 
@@ -173,7 +189,8 @@ class LStockDailyEnv(gym.Env):
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        self.current_step = NEXT_OBSERVATION_SIZE
+        if self.current_step > self.df.shape[0] - NEXT_OBSERVATION_SIZE:
+            self.current_step = NEXT_OBSERVATION_SIZE
 
         return self._next_observation()
 
@@ -182,8 +199,8 @@ class LStockDailyEnv(gym.Env):
 
         print(f'Step: {self.current_step}')
         print(f'Balance: {self.balance}')
-        # print(f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})')
-        # print(f'Avg cost for held shares: {self.cost_basis} (Total sales value: {self.total_sales_value})')
+        print(f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})')
+        print(f'Avg cost for held shares: {self.cost_basis} (Total sales value: {self.total_sales_value})')
         print(f'Net worth: {self.net_worth} (Max net worth: {self.max_net_worth})')
         print(f'Profit: {profit}')
 
@@ -212,10 +229,19 @@ def test_rl():
     ltdxhq = LTdxHq()
     code = '000032' # 000032 300142 603636 600519
     # df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
-    df = ltdxhq.get_k_data_daily('603636', end='2021-01-01') # 000032 300142 603636 600519
+    df = ltdxhq.get_k_data_daily(code, end='2021-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
+    # df['macd']
+    # df['kdjk']
+    # df['rsi_6']
+    # df['rsi_12']
 
     # min_max_scaler = preprocessing.MinMaxScaler()
+    # # df = pd.DataFrame(min_max_scaler.fit_transform(df))
+    # df = pd.DataFrame(min_max_scaler.fit_transform(df), index=df.index, columns=df.columns)
+    # print(df)
+    # df_eval = df[df.index >= '2021-01-01']
+    # df = df[df.index < '2021-01-01']
     # df = pd.DataFrame(min_max_scaler.fit_transform(df.drop(columns=['date', 'code'])))
     # df.columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
 
@@ -233,7 +259,7 @@ def test_rl():
     env = DummyVecEnv([lambda: LStockDailyEnv(df)])
     # model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
     model = PPO('MlpPolicy', env, verbose=1) # , tensorboard_log='log')
-    model.learn(100000)
+    model.learn(20000)
     # model = PPO1(LstmPolicy, env, verbose=1)
     # model.learn(total_timesteps=1000)
 
@@ -271,9 +297,11 @@ def test_rl():
     net_worths = []
     actions = []
     done, state = False, None
-    while not done:
+    # while not done:
+    for _ in range(NEXT_OBSERVATION_SIZE, df_eval.shape[0]):
         action, state = model.predict(obs, state=state, deterministic=True)
         obs, reward, done, _info = eval_env.step(action)
+        print(action, done)
         net_worths.append(_info[0]['net_worth'])
         # if is_recurrent:
         #     obs[0, :] = new_obs
