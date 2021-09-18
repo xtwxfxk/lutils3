@@ -172,11 +172,11 @@ class LStockDailyEnv(gym.Env):
             is_tran = True
 
         # next time net_worth
-        self.net_worth = self.balance + self.shares_held * self.df.iloc[self.current_step + 1]['close']
+        self.net_worth = self.balance + self.shares_held * self.df.iloc[self.current_step]['close']
 
         ###################################################################################
 
-        # done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4 # or self.current_step + 1 >= self.df.shape[0]
+        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 # or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4 # or self.current_step + 1 >= self.df.shape[0]
 
         # reward = 0
         # if self.df is not None:
@@ -194,11 +194,11 @@ class LStockDailyEnv(gym.Env):
         #             reward = 0
         #         # reward = 0
 
-        # reward = 0
-        # if is_tran:
-        #     reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        # else:
-        #     reward = -1
+        reward = 0
+        if is_tran:
+            reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        else:
+            reward = -1
         # if done:
         #     reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
 
