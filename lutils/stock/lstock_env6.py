@@ -1,10 +1,11 @@
-import random
+import random, datetime
 import gym
 from gym import error, spaces
 import pandas as pd
 import numpy as np
 from enum import Enum
 from stockstats import StockDataFrame
+from sklearn import preprocessing
 # from tensorboardX import SummaryWriter
 
 MAX_ACCOUNT_BALANCE = 2147483647
@@ -41,7 +42,9 @@ class LStockDailyEnv(gym.Env):
 
         self.action_space = spaces.Discrete(len(Actions))
 
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float32)
+
+        self.min_max_scaler = preprocessing.MinMaxScaler()
 
     def seed(self, seed=None):
         pass
@@ -50,9 +53,6 @@ class LStockDailyEnv(gym.Env):
     def _next_observation(self):
         if self.df is None:
             return None
-
-        # for i in range(NEXT_OBSERVATION_SIZE)
-        #     self.df[:-self.current_step +].describe()
 
         frame = np.array([ # 11 * 10
             self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['open'].values / MAX_SHARE_PRICE,
@@ -100,81 +100,113 @@ class LStockDailyEnv(gym.Env):
         # if frame.shape[1] == 0:
         #     print(self.current_step)
 
+        # frame = self.min_max_scaler.fit_transform(frame)
+        # frame = pd.DataFrame(min_max_scaler.fit_transform(df), index=df.index, columns=df.columns)
+
         return frame
 
-    def _take_action(self, action):
-        if self.df is not None:
-            current_price = self.df.iloc[self.current_step]['close'] # + 0.02
+    # def _take_action(self, action):
+    #     if self.df is not None:
+    #         current_price = self.df.iloc[self.current_step]['close'] # + 0.02
 
-        # action_type = action[0]
-        # amount = action[1]
-        # amount = 1
+    #     exchange_rate = 0.00015
 
-        exchange_rate = 0.00015
+    #     is_tran = False
+    #     if action == Actions.Buy.value and (self.balance / current_price) > 1:
+    #         # Buy amount % of balance in shares
+    #         current_price = current_price
+    #         total_possible = int(self.balance / current_price)
+    #         shares_bought = int(total_possible)
+    #         prev_cost = self.cost_basis * self.shares_held
+    #         additional_cost = shares_bought * current_price
 
-        result = False
-        if action == Actions.Buy.value:
+    #         self.balance -= additional_cost
+    #         self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
+    #         self.shares_held += shares_bought
+
+    #         is_tran = True
+    #     elif action == Actions.Sell.value and self.shares_held > 0:
+    #         current_price = current_price
+    #         shares_sold = int(self.shares_held)
+
+    #         self.balance += shares_sold * current_price
+    #         self.shares_held -= shares_sold
+    #         self.total_shares_sold += shares_sold
+    #         self.total_sales_value += shares_sold * current_price
+
+    #         is_tran = True
+    #     self.net_worth = self.balance + self.shares_held * current_price
+
+    #     if self.net_worth > self.max_net_worth:
+    #         self.max_net_worth = self.net_worth
+
+    #     return is_tran
+
+    def step(self, action):
+
+        current_price = self.df.iloc[self.current_step]['close']
+
+        is_tran = False
+        if action == Actions.Buy.value and (self.balance / current_price) > 1:
             # Buy amount % of balance in shares
-            current_price = current_price + 0.02
+            current_price = current_price
             total_possible = int(self.balance / current_price)
             shares_bought = int(total_possible)
             prev_cost = self.cost_basis * self.shares_held
             additional_cost = shares_bought * current_price
 
-            if shares_bought > 0:
-                result = True
             self.balance -= additional_cost
             self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
             self.shares_held += shares_bought
 
-        elif action == Actions.Sell.value:
-            current_price = current_price - 0.02
+            is_tran = True
+        elif action == Actions.Sell.value and self.shares_held > 0:
+            current_price = current_price
             shares_sold = int(self.shares_held)
-            if shares_sold > 0:
-                result = True
+
             self.balance += shares_sold * current_price
             self.shares_held -= shares_sold
             self.total_shares_sold += shares_sold
             self.total_sales_value += shares_sold * current_price
 
-        self.net_worth = self.balance + self.shares_held * current_price
+            is_tran = True
+
+        # next time net_worth
+        self.net_worth = self.balance + self.shares_held * self.df.iloc[self.current_step + 1]['close']
+
+        ###################################################################################
+
+        # done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4 # or self.current_step + 1 >= self.df.shape[0]
+
+        # reward = 0
+        # if self.df is not None:
+        #     if action == Actions.Buy.value: # Buy
+        #         reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+        #         if not is_tran:
+        #             reward = -reward
+        #     elif action == Actions.Sell.value: # Sell
+        #         reward = self.df.iloc[self.current_step]['close'] - self.df.iloc[self.current_step + 1]['close']
+        #         if not is_tran:
+        #             reward = -reward
+        #     else: # Hold
+        #         reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
+        #         if self.shares_held < 1:
+        #             reward = 0
+        #         # reward = 0
+
+        # reward = 0
+        # if is_tran:
+        #     reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        # else:
+        #     reward = -1
+        # if done:
+        #     reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
 
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
 
-        return result
-        # if self.shares_held == 0:
-        #     self.cost_basis = 0
-
-
-    def step(self, action):
-
-        result = self._take_action(action)
-
         self.current_step = self.current_step + 1
-
-        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or self.current_step % 5 == 0 or self.current_step + 1 >= self.df.shape[0]
-
         obs = self._next_observation()
-
-        reward = 0
-        if self.df is not None:
-            if action == Actions.Buy.value: # Buy
-                reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
-                if not result:
-                    reward = -reward
-            elif action == Actions.Sell.value: # Sell
-                reward = self.df.iloc[self.current_step]['close'] - self.df.iloc[self.current_step + 1]['close']
-                if not result:
-                    reward = -reward
-            else: # Hold
-                reward = self.df.iloc[self.current_step + 1]['close'] - self.df.iloc[self.current_step]['close']
-                if self.shares_held < 1:
-                    reward = 0
-                # reward = 0
-
-        if done:
-            reward = (self.net_worth - INITIAL_ACCOUNT_BALANCE)
 
         return obs, reward, done, {'net_worth': self.net_worth, 'current_step': self.current_step}
 
@@ -229,6 +261,10 @@ def test_rl():
     # df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
     df = ltdxhq.get_k_data_daily(code, end='2021-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
+    
+    df['ma21'] = df['close'].rolling(window=20, min_periods=1).mean()
+    df['trend'] = df.close.diff().fillna(0) / df.close
+
     # df['macd']
     # df['kdjk']
     # df['rsi_6']
@@ -244,7 +280,12 @@ def test_rl():
     # df.columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
 
     # df_eval = ltdxhq.get_k_data_1min(code, start='2021-08-10')
-    df_eval = ltdxhq.get_k_data_daily(code, start='2021-01-01')
+    _df = ltdxhq.get_k_data_daily(code, start='2021-01-01')
+
+    _df['ma21'] = _df['close'].rolling(window=20, min_periods=1).mean()
+    _df['trend'] = _df.close.diff().fillna(0) / _df.close
+
+    df_eval = _df['2021-01-01':] # ltdxhq.get_k_data_daily(code, start='2021-01-01')
     df_eval = StockDataFrame(df_eval.rename(columns={'vol': 'volume'}))
 
     ltdxhq.close()
@@ -260,31 +301,6 @@ def test_rl():
     model.learn(20000)
     # model = PPO1(LstmPolicy, env, verbose=1)
     # model.learn(total_timesteps=1000)
-
-
-
-    # env.set_attr('df', df2)
-    # obs = env.reset()
-
-    # rewards = []
-    # actions = []
-    # net_worths = []
-    # # for i in range(220):
-    # for i in range(NEXT_OBSERVATION_SIZE, df2.shape[0]):
-    #     # actual_obs = observation(df2, i)
-    #     # action, _states = model.predict(actual_obs)
-    #     # action = [action]
-    #     action, _states = model.predict(obs)
-    #     obs, reward, done, info = env.step(action)
-    #     rewards.append(reward)
-    #     actions.append(action[0][0])
-    #     net_worths.append(info[0]['net_worth'])
-    #     # print(info[0]['current_step'])
-    #     env.render()
-
-    # mean_reward, _  = evaluate_policy(model, eval_env, n_eval_episodes=1, render=True) # EVAL_EPS
-
-    # print(mean_reward)
 
     model.save('ppo_stock')
     # model = PPO.load('ppo_stock')
