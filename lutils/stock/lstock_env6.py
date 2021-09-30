@@ -44,7 +44,8 @@ class LStockDailyEnv(gym.Env):
 
         self.observation_space = spaces.Box(low=0, high=1, shape=(14, NEXT_OBSERVATION_SIZE), dtype=np.float32)
 
-        self.min_max_scaler = preprocessing.MinMaxScaler()
+        # self.min_max_scaler = preprocessing.MinMaxScaler()
+        self.scaler = preprocessing.RobustScaler()
 
     def seed(self, seed=None):
         pass
@@ -55,12 +56,12 @@ class LStockDailyEnv(gym.Env):
             return None
 
         frame = np.array([ # 11 * 10
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['open'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['high'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['low'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['close'].values / MAX_SHARE_PRICE,
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['volume'].values / MAX_NUM_SHARES,
-            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['amount'].values / MAX_NUM_SHARES,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['open'].values, # / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['high'].values, # / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['low'].values, # / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['close'].values, # / MAX_SHARE_PRICE,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['volume'].values, # / MAX_NUM_SHARES,
+            self.df.iloc[self.current_step - NEXT_OBSERVATION_SIZE: self.current_step]['amount'].values, # / MAX_NUM_SHARES,
             
             # self.df['close'].pct_change().fillna(0)[self.current_step: self.current_step + NEXT_OBSERVATION_SIZE],
 
@@ -102,6 +103,7 @@ class LStockDailyEnv(gym.Env):
 
         # frame = self.min_max_scaler.fit_transform(frame)
         # frame = pd.DataFrame(min_max_scaler.fit_transform(df), index=df.index, columns=df.columns)
+        frame = self.scaler.fit_transform(frame)
 
         return frame
 
@@ -176,7 +178,7 @@ class LStockDailyEnv(gym.Env):
 
         ###################################################################################
 
-        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 # or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4 # or self.current_step + 1 >= self.df.shape[0]
+        done = self.net_worth <= INITIAL_ACCOUNT_BALANCE * .9 or self.current_step + 1 >= self.df.shape[0] # or datetime.datetime.strptime(self.df.index[self.current_step], '%Y-%M-%d').weekday() == 4
 
         # reward = 0
         # if self.df is not None:
@@ -198,7 +200,7 @@ class LStockDailyEnv(gym.Env):
         if is_tran:
             reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
         else:
-            reward = -1
+            reward = -10
         # if done:
         #     reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
 
@@ -257,7 +259,7 @@ def test_rl():
     from lutils.stock import LTdxHq
 
     ltdxhq = LTdxHq()
-    code = '000032' # 000032 300142 603636 600519
+    code = '600519' # 000032 300142 603636 600519
     # df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
     df = ltdxhq.get_k_data_daily(code, end='2021-01-01') # 000032 300142 603636 600519
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))

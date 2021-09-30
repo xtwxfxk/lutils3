@@ -154,6 +154,7 @@ class LTdxHq(TdxHq_API):
         df['date'] = df[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1)
         df = df.drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)
         df = df.loc[(df['datetime'] >= start_date) & (df['datetime'] < end_date)]
+        df = df.rename(columns={'vol': 'volume'})
         return df
 
     # KLINE_TYPE_5MIN = 0         # 5 分钟K 线
