@@ -228,6 +228,7 @@ def test_rl():
     code = '000032' # 000032 300142 603636 600519
     # df = ltdxhq.get_k_data_1min(code, end='2021-09-02') # 000032 300142 603636 600519
     df = ltdxhq.get_k_data_daily(code, end='2021-01-01') # 000032 300142 603636 600519
+    df = ltdxhq.to_qfq(code, df)
     df = StockDataFrame(df.rename(columns={'vol': 'volume'}))
     # df['macd']
     # df['kdjk']
@@ -245,6 +246,7 @@ def test_rl():
 
     # df_eval = ltdxhq.get_k_data_1min(code, start='2021-08-10')
     df_eval = ltdxhq.get_k_data_daily(code, start='2021-01-01')
+    df_eval = ltdxhq.to_qfq(code, df_eval)
     df_eval = StockDataFrame(df_eval.rename(columns={'vol': 'volume'}))
 
     ltdxhq.close()
@@ -257,7 +259,7 @@ def test_rl():
     env = DummyVecEnv([lambda: LStockDailyEnv(df)])
     # model = PPO2(MlpPolicy, env, verbose=1) # , tensorboard_log='log')
     model = PPO('MlpPolicy', env, verbose=1) # , tensorboard_log='log')
-    model.learn(20000)
+    model.learn(100000)
     # model = PPO1(LstmPolicy, env, verbose=1)
     # model.learn(total_timesteps=1000)
 

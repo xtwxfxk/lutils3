@@ -146,16 +146,17 @@ class LTdxHq(TdxHq_API):
             if datetime.datetime.strptime(_df.head(1).at[0, 'datetime'], '%Y-%m-%d %H:%M') < start_time:
                 break
 
-        df = pd.concat(dfs, axis=0).sort_values(by="datetime", ascending=True)
-        # df = df.set_index('datetime', drop=True, inplace=False)\
-        #     .drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
+        df = pd.concat(dfs, axis=0).sort_values(by='datetime', ascending=True)
 
-        # df = df.set_index('datetime', drop=True, inplace=False).drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)[start_date:end_date]
-        df['date'] = df[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1)
+        df['datetime'] = df['datetime'] + ':00'
+
+        df = df.assign(date=df[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
         df = df.drop(['year', 'month', 'day', 'hour', 'minute'], axis=1)
         df = df.loc[(df['datetime'] >= start_date) & (df['datetime'] < end_date)]
         df = df.rename(columns={'vol': 'volume'})
+
         return df
+
 
     # KLINE_TYPE_5MIN = 0         # 5 分钟K 线
     # KLINE_TYPE_15MIN = 1        # 15 分钟K 线
@@ -200,6 +201,39 @@ class LTdxHq(TdxHq_API):
     @reindex_date
     def get_k_data_monthly(self, code, start='2000-01-01', end=None):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY)
+
+    def to_qfq(self, code, df):
+        xdxr = self.to_df(self.get_xdxr_info(1, code))
+
+        if xdxr.shape[0] < 1:
+            return df
+
+        xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
+        xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
+        xdxr = xdxr.set_index('date', drop=False, inplace=False)
+
+        info = xdxr[xdxr['category'] == 1]
+
+        if info.shape[0] > 0:
+
+            data = df.join(info[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how="left")
+
+            data.category = data.category.fillna(method='ffill')
+
+            data = data.fillna(0)
+            data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
+
+            data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
+
+            for col in ['open', 'high', 'low', 'close', 'preclose']:
+                data[col] = data[col] * data['adj']
+
+            data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
+            data = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
+
+            return data
+        else:
+            return df
 
 
     def get_hosts(self):
