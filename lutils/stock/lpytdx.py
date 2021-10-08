@@ -111,6 +111,10 @@ class LTdxHq(TdxHq_API):
     #     pritn('exit')
     #     self.disconnect()
 
+    def stock_list(self):
+        data = pd.concat([pd.concat([self.to_df(self.get_security_list(j, i * 1000)).assign(sse='sz' if j == 0 else 'sh') for i in range(int(self.get_security_count(j) / 1000) + 1)], axis=0, sort=False) for j in range(2)], axis=0, sort=False)
+        return data
+
     def get_k_data(self, code, start, end, **kwargs):
         def __select_market_code(code):
             code = str(code)
