@@ -124,11 +124,12 @@ class LTdxHq(TdxHq_API):
 
         category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
         market = kwargs.get('market', __select_market_code(code))
+        qfq = kwargs.get('qfq', False)
         end = end if end is not None else datetime.date.today().strftime('%Y-%m-%d')
 
-        return self._get_k_data(code, category, market, start, end)
+        return self._get_k_data(code, category, market, start, end, qfq)
 
-    def _get_k_data(self, code, category, market, start, end):
+    def _get_k_data(self, code, category, market, start, end, qfq, **kwargs):
         start_time = datetime.datetime.strptime(start, '%Y-%m-%d') + datetime.timedelta(hours=9, minutes=30)
         end_time = datetime.datetime.strptime(end, '%Y-%m-%d') + datetime.timedelta(hours=15)
 
@@ -158,6 +159,34 @@ class LTdxHq(TdxHq_API):
         df = df.loc[(df['datetime'] >= start_date) & (df['datetime'] < end_date)]
         df = df.rename(columns={'vol': 'volume'})
 
+        ############################## qfq #############################
+        if qfq:
+            xdxr = self.to_df(self.get_xdxr_info(market, code))
+            xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
+            # xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
+            xdxr = xdxr[xdxr['category'] == 1]
+            data = df.groupby('date').first().join(xdxr[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu', 'date']].set_index('date'), how='left', on='date')
+            data = df.set_index('datetime').join(data.reset_index().set_index('datetime')[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how='left', on='datetime').reset_index()
+
+            data.category = data.category.fillna(method='ffill')
+
+            data = data.fillna(0)
+            data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
+
+            data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
+
+            for col in ['open', 'high', 'low', 'close', 'preclose']:
+                data[col] = data[col] * data['adj']
+
+            decimals = pd.Series([2, 2, 2, 2], index=['open', 'close', 'high', 'low'])
+            data = data.round(decimals)
+            data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
+            try:
+                data['high_limit'] = data['high_limit'] * data['adj']
+                data['low_limit'] = data['high_limit'] * data['adj']
+            except:
+                pass
+            df = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
         return df
 
 
@@ -174,36 +203,36 @@ class LTdxHq(TdxHq_API):
     # KLINE_TYPE_3MONTH = 10      # 季K 线
     # KLINE_TYPE_YEARLY = 11      # 年K 线
     @reindex_date_datetime
-    def get_k_data_1min(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN)
+    def get_k_data_1min(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1MIN, **kwargs)
 
     @reindex_date_datetime
-    def get_k_data_5min(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_5MIN)
+    def get_k_data_5min(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_5MIN, **kwargs)
 
     @reindex_date_datetime
-    def get_k_data_15min(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_15MIN)
+    def get_k_data_15min(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_15MIN, **kwargs)
 
     @reindex_date_datetime
-    def get_k_data_30min(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_30MIN)
+    def get_k_data_30min(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_30MIN, **kwargs)
 
     @reindex_date_datetime
-    def get_k_data_1hour(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1HOUR)
+    def get_k_data_1hour(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_1HOUR, **kwargs)
 
     @reindex_date
-    def get_k_data_daily(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_DAILY)
+    def get_k_data_daily(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_DAILY, **kwargs)
 
     @reindex_date
-    def get_k_data_weekly(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_WEEKLY)
+    def get_k_data_weekly(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_WEEKLY, **kwargs)
 
     @reindex_date
-    def get_k_data_monthly(self, code, start='2000-01-01', end=None):
-        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY)
+    def get_k_data_monthly(self, code, start='2000-01-01', end=None, **kwargs):
+        return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY, **kwargs)
 
     def to_qfq(self, code, df):
         xdxr = self.to_df(self.get_xdxr_info(1, code))
