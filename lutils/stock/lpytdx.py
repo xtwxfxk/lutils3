@@ -124,7 +124,7 @@ class LTdxHq(TdxHq_API):
 
         category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
         market = kwargs.get('market', __select_market_code(code))
-        qfq = kwargs.get('qfq', False)
+        qfq = kwargs.get('qfq', True)
         end = end if end is not None else datetime.date.today().strftime('%Y-%m-%d')
 
         return self._get_k_data(code, category, market, start, end, qfq)
