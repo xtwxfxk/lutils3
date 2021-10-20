@@ -20,7 +20,6 @@ category K线种类:
 
 '''
 
-
 class Market():
     SH = TDXParams.MARKET_SH    # 深圳
     SZ = TDXParams.MARKET_SZ    # 上海
@@ -53,7 +52,6 @@ class Category():
 #     KLINE_TYPE_RI_K = 9         # 日K 线
 #     KLINE_TYPE_3MONTH = 10      # 季K 线
 #     KLINE_TYPE_YEARLY = 11      # 年K 线
-
 
 def reindex_date(func):
 
