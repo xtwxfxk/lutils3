@@ -58,7 +58,7 @@ def reindex_date(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         datas = func(*args, **kwargs)
-        datas = datas.set_index(datas['date'], drop=True, inplace=False)
+        datas = datas.set_index(pd.to_datetime(datas['date']), drop=True, inplace=False)
         datas = datas.drop(['date', 'datetime'], axis=1)
 
         return datas
@@ -70,14 +70,13 @@ def reindex_date_datetime(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         datas = func(*args, **kwargs)
-        datas = datas.set_index([datas['date'], datas['datetime']], drop=True, inplace=False)
+        datas = datas.set_index([pd.to_datetime(datas['date']), pd.to_datetime(datas['datetime'])], drop=True, inplace=False)
         datas = datas.drop(['date', 'datetime'], axis=1)
         return datas
 
     return wrapped
 
 class LTdxHq(TdxHq_API):
-
 
     def __init__(self, multithread=False, heartbeat=False, auto_retry=False, raise_exception=False, random_connect=False):
         super(LTdxHq, self).__init__(multithread=multithread, heartbeat=heartbeat, auto_retry=auto_retry, raise_exception=raise_exception)
@@ -232,38 +231,38 @@ class LTdxHq(TdxHq_API):
     def get_k_data_monthly(self, code, start='2000-01-01', end=None, **kwargs):
         return self.get_k_data(code=code, start=start, end=end, category=Category.KLINE_TYPE_MONTHLY, **kwargs)
 
-    def to_qfq(self, code, df):
-        xdxr = self.to_df(self.get_xdxr_info(1, code))
+    # def to_qfq(self, code, df):
+    #     xdxr = self.to_df(self.get_xdxr_info(1, code))
 
-        if xdxr.shape[0] < 1:
-            return df
+    #     if xdxr.shape[0] < 1:
+    #         return df
 
-        xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
-        xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
-        xdxr = xdxr.set_index('date', drop=False, inplace=False)
+    #     xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
+    #     xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
+    #     xdxr = xdxr.set_index('date', drop=False, inplace=False)
 
-        info = xdxr[xdxr['category'] == 1]
+    #     info = xdxr[xdxr['category'] == 1]
 
-        if info.shape[0] > 0:
+    #     if info.shape[0] > 0:
 
-            data = df.join(info[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how="left")
+    #         data = df.join(info[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how="left")
 
-            data.category = data.category.fillna(method='ffill')
+    #         data.category = data.category.fillna(method='ffill')
 
-            data = data.fillna(0)
-            data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
+    #         data = data.fillna(0)
+    #         data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
 
-            data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
+    #         data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
 
-            for col in ['open', 'high', 'low', 'close', 'preclose']:
-                data[col] = data[col] * data['adj']
+    #         for col in ['open', 'high', 'low', 'close', 'preclose']:
+    #             data[col] = data[col] * data['adj']
 
-            data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
-            data = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
+    #         data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
+    #         data = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
 
-            return data
-        else:
-            return df
+    #         return data
+    #     else:
+    #         return df
 
 
     def get_hosts(self):
