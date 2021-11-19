@@ -32,35 +32,11 @@ def reindex_date_datetime(func):
 
 class LTdxMongo():
 
-    def __init__(self, multithread=False, heartbeat=False, auto_retry=False, raise_exception=False, random_connect=False):
-        super(LTdxHq, self).__init__(multithread=multithread, heartbeat=heartbeat, auto_retry=auto_retry, raise_exception=raise_exception)
-        if random_connect:
-            host = random.choice(ltdxhq.get_hosts())
-            self.connect(host[1], host[2])
-        else:
-            self.connect('119.147.212.81', 7709)
+    
 
-    # def __del__(self):
-    #     print("del")
-    #     # self.disconnect()
-    #     if self.heartbeat_thread and self.heartbeat_thread.is_alive():
-    #         self.stop_event.set()
+    def __init__(self):
+        pass
 
-    #     if self.client:
-    #         print("disconnecting")
-    #         try:
-    #             self.client.shutdown(socket.SHUT_RDWR)
-    #             self.client.close()
-    #             self.client = None
-    #         except Exception as e:
-    #             print(str(e))
-    #             if self.raise_exception:
-    #                 raise TdxConnectionError("disconnect err")
-    #         print("disconnected")
-
-    # def __exit__(self, *args):
-    #     pritn('exit')
-    #     self.disconnect()
 
     def stock_list(self):
         data = pd.concat([pd.concat([self.to_df(self.get_security_list(j, i * 1000)).assign(sse='sz' if j == 0 else 'sh') for i in range(int(self.get_security_count(j) / 1000) + 1)], axis=0, sort=False) for j in range(2)], axis=0, sort=False)
