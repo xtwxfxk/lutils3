@@ -13,7 +13,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 matplotlib.use("Agg")
 
 # tf_logger = configure('/home/l/code/python/log/run', format_strings=['tensorboard'])
-tf_logger = configure('/home/l/code/python/log/run', format_strings=['log'])
+tf_logger = configure('/home/l/code/python/log/env', format_strings=['log'])
 logger = configure('/home/l/code/python/log')
 
 class StockTradingEnvCashpenalty(gym.Env):
