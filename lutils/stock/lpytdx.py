@@ -108,19 +108,26 @@ class LTdxHq(TdxHq_API):
     #     pritn('exit')
     #     self.disconnect()
 
+    def _select_market_code(self, code):
+        code = str(code)
+        if code[0] in ['5', '6', '9'] or code[:3] in ["009", "126", "110", "201", "202", "203", "204"]:
+            return 1
+        return 0
+
+
+    def stock_info(self, code):
+        market_code = self._select_market_code(code)
+        return self.to_df(self.get_finance_info(market_code, code))
+
     def stock_list(self):
         data = pd.concat([pd.concat([self.to_df(self.get_security_list(j, i * 1000)).assign(sse='sz' if j == 0 else 'sh') for i in range(int(self.get_security_count(j) / 1000) + 1)], axis=0, sort=False) for j in range(2)], axis=0, sort=False)
         return data
 
     def get_k_data(self, code, start, end, **kwargs):
-        def __select_market_code(code):
-            code = str(code)
-            if code[0] in ['5', '6', '9'] or code[:3] in ["009", "126", "110", "201", "202", "203", "204"]:
-                return 1
-            return 0
+        
 
         category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
-        market = kwargs.get('market', __select_market_code(code))
+        market = kwargs.get('market', self._select_market_code(code))
         qfq = kwargs.get('qfq', True)
         end = end if end is not None else datetime.date.today().strftime('%Y-%m-%d')
 
