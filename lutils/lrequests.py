@@ -130,7 +130,7 @@ class LRequests(object):
     def get_forms_by_url(self, url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, isdecode=False, repeat=3, is_xpath=False):
         try:
             if timeout is socket._GLOBAL_DEFAULT_TIMEOUT:
-                timeout = self._timeout
+                timeout = self.timeout
             response = None
             response = self.open(url, data, timeout, isdecode, repeat, is_xpath)
             return ParseFile(io.StringIO(str(BeautifulSoup(self.body, 'lxml')).replace('<br/>', '').replace('<hr/>', '')), response.geturl(), backwards_compat=False)
@@ -159,12 +159,14 @@ class LRequests(object):
                 if isinstance(response, str):
                     self._body = response
                 else:
-                    self._body = response.text.encode('utf-8')
+                    self._body = str(response.text.encode('utf-8'))
                 if is_xpath:
                     self.tree = html.fromstring(str(BeautifulSoup(self.body, 'lxml')))
         except :
             raise
 
+    def post(self, url, headers=None, data=None):
+        self.session.post(url, data=data)
 
     def xpath(self, xpath):
         eles = self.tree.xpath(xpath)
