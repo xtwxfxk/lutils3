@@ -7,7 +7,6 @@ import sys
 import socket
 import random
 import bisect
-import codecs
 import logging
 import logging.config
 from bs4 import BeautifulSoup
@@ -86,7 +85,7 @@ def read_random_lines(path, amount=5):
         _length = os.stat(path).st_size
         if _length > 0:
 #            with open(path) as input:
-            with codecs.open(path, 'r', 'utf-8') as input:
+            with open(path, 'r', encoding='utf-8') as input:
                 for x in range(amount):
                     _count = 10
                     while _count:

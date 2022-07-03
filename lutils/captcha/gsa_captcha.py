@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'xtwxfxk'
 
-import io, time
-from lutils.ClientForm import ParseFile
-from lutils.lrequest import LRequest
+import io, time, requests
+# from lutils.ClientForm import ParseFile
+# from lutils.lrequests import LRequests
 
 
 gsa_form_str = '''<form method="post" enctype="multipart/form-data" action="http://%s:%s/gsa_test.gsa">
@@ -21,50 +21,54 @@ class GsaCaptcha():
         self.ip = ip
         self.port = port
 
-        self.lr = LRequest()
+        # self.lr = LRequests()
 
     def decode(self, file_path):
         try:
 
-            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-            form.add_file(open(file_path, 'rb'), name='file')
-            self.lr.load(form.click(), is_xpath=False)
-            gsa_result = self.lr.body
+            # form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+            # form.add_file(open(file_path, 'rb'), name='file')
+            # self.lr.load(form.click(), is_xpath=False)
+
+
+            files = {'file': open(file_path, 'rb')}
+            r = requests.post('http://%s:%s' % (self.ip, self.port), files=files)
+            gsa_result = r.text
             result = ''
-            if gsa_result.find('<span id="captcha_result">') > -1:
-                result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
+            if gsa_result.find('text=') > -1:
+                result = gsa_result.split('text=')[-1].strip()
 
             return result
         except:
             raise
 
-    def decode_stream(self, file_data):
-        try:
+    # def decode_stream(self, file_data):
+    #     try:
 
-            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-            form.add_file(io.StringIO(file_data), name='file')
-            self.lr.load(form.click(), is_xpath=False)
-            result = ''
-            gsa_result = self.lr.body
-            if gsa_result.find('<span id="captcha_result">') > -1:
-                result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
+    #         form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+    #         form.add_file(io.StringIO(file_data), name='file')
+    #         self.lr.load(form.click(), is_xpath=False)
+    #         result = ''
+    #         gsa_result = self.lr.body
+    #         if gsa_result.find('<span id="captcha_result">') > -1:
+    #             result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
 
-            return result
-        except:
-            raise
+    #         return result
+    #     except:
+    #         raise
 
-    def decode_url(self, url):
-        try:
-            self.lr.load(url)
+    # def decode_url(self, url):
+    #     try:
+    #         self.lr.load(url)
 
-            form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-            form.add_file(io.StringIO(self.lr.body), name='file')
-            self.lr.load(form.click(), is_xpath=False)
-            result = ''
-            gsa_result = self.lr.body
-            if gsa_result.find('<span id="captcha_result">') > -1:
-                result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
+    #         form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+    #         form.add_file(io.StringIO(self.lr.body), name='file')
+    #         self.lr.load(form.click(), is_xpath=False)
+    #         result = ''
+    #         gsa_result = self.lr.body
+    #         if gsa_result.find('<span id="captcha_result">') > -1:
+    #             result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
 
-            return result
-        except:
-            raise
+    #         return result
+    #     except:
+    #         raise

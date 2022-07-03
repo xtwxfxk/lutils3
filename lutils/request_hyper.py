@@ -26,7 +26,7 @@ from bs4 import BeautifulSoup
 from lutils.bitvise import Bitvise
 from lutils import read_random_lines, LUTILS_ROOT
 from lutils.lrequest import free_port, getaddrinfo
-# from hyper.contrib import HTTP20Adapter
+from hyper.contrib import HTTP20Adapter
 
 __all__ = ['LRequests']
 
@@ -69,7 +69,7 @@ class LRequests(object):
         # self.session = requesocks.session(headers=self.headers, timeout=timeout)
         self.session = requests.Session()
         self.session.headers = self.headers
-        # self.session.mount('https://', HTTP20Adapter())
+        self.session.mount('https://', HTTP20Adapter())
         # self.session = requests.session()
 
 #        self.session.headers = self.headers
