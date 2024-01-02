@@ -124,13 +124,14 @@ class LTdxHq(TdxHq_API):
         return data
 
     def get_k_data(self, code, start, end, **kwargs):
-        
 
         category = kwargs.get('category', Category.KLINE_TYPE_RI_K)
         market = kwargs.get('market', self._select_market_code(code))
         qfq = kwargs.get('qfq', True)
         end = end if end is not None else datetime.date.today().strftime('%Y-%m-%d')
 
+        # df = self._get_k_data(code, category, market, start, end, qfq)
+        # print(df)
         return self._get_k_data(code, category, market, start, end, qfq)
 
     def _get_k_data(self, code, category, market, start, end, qfq, **kwargs):
@@ -166,31 +167,32 @@ class LTdxHq(TdxHq_API):
         ############################## qfq #############################
         if qfq:
             xdxr = self.to_df(self.get_xdxr_info(market, code))
-            xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
-            # xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
-            xdxr = xdxr[xdxr['category'] == 1]
-            data = df.groupby('date').first().join(xdxr[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu', 'date']].set_index('date'), how='left', on='date')
-            data = df.set_index('datetime').join(data.reset_index().set_index('datetime')[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how='left', on='datetime').reset_index()
+            if xdxr is not None and not xdxr.empty:
+                xdxr = xdxr.assign(date=xdxr[['year', 'month', 'day']].apply(lambda x: '{0}-{1:02d}-{2:02d}'.format(x[0], x[1], x[2]), axis=1))
+                # xdxr = xdxr.drop(['year', 'month', 'day'], axis=1)
+                xdxr = xdxr[xdxr['category'] == 1]
+                data = df.groupby('date').first().join(xdxr[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu', 'date']].set_index('date'), how='left', on='date')
+                data = df.set_index('datetime').join(data.reset_index().set_index('datetime')[['category', 'fenhong', 'peigu', 'peigujia', 'songzhuangu']], how='left', on='datetime').reset_index()
 
-            data.category = data.category.fillna(method='ffill')
+                data.category = data.category.fillna(method='ffill')
 
-            data = data.fillna(0)
-            data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
+                data = data.fillna(0)
+                data['preclose'] = (data['close'].shift(1) * 10 - data['fenhong'] + data['peigu'] * data['peigujia']) / (10 + data['peigu'] + data['songzhuangu'])
 
-            data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
+                data['adj'] = (data['preclose'].shift(-1) / data['close']).fillna(1)[::-1].cumprod()
 
-            for col in ['open', 'high', 'low', 'close', 'preclose']:
-                data[col] = data[col] * data['adj']
+                for col in ['open', 'high', 'low', 'close', 'preclose']:
+                    data[col] = data[col] * data['adj']
 
-            decimals = pd.Series([2, 2, 2, 2], index=['open', 'close', 'high', 'low'])
-            data = data.round(decimals)
-            data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
-            try:
-                data['high_limit'] = data['high_limit'] * data['adj']
-                data['low_limit'] = data['high_limit'] * data['adj']
-            except:
-                pass
-            df = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
+                decimals = pd.Series([2, 2, 2, 2], index=['open', 'close', 'high', 'low'])
+                data = data.round(decimals)
+                data['volume'] = data['volume']  if 'volume' in data.columns else data['vol']
+                try:
+                    data['high_limit'] = data['high_limit'] * data['adj']
+                    data['low_limit'] = data['high_limit'] * data['adj']
+                except:
+                    pass
+                df = data.drop(['fenhong', 'peigu', 'peigujia', 'songzhuangu', 'category', 'preclose', 'adj'], axis=1, errors='ignore')
         return df
 
 
@@ -289,6 +291,7 @@ if __name__ == '__main__':
     ltdxhq.get_k_data_1min(code='603636', start='2013-01-01')
 
 
+    ltdxhq.get_k_data_daily(code='110059', start='2000-01-01')
 
     # import tushare as ts
     # ts.set_token('xxxxx')

@@ -20,7 +20,6 @@ from http import cookiejar
 from urllib.parse import urlparse
 import io, urllib
 
-import browsercookie
 #from scrapy.selector import Selector
 from lxml import html
 from bs4 import BeautifulSoup
@@ -28,8 +27,9 @@ from lutils.bitvise import Bitvise
 from lutils import read_random_lines, LUTILS_ROOT
 from lutils.lrequest import free_port, getaddrinfo
 # from hyper.contrib import HTTP20Adapter
-from Crypto.Cipher import AES
-from Crypto.Protocol.KDF import PBKDF2
+
+# from Crypto.Cipher import AES
+# from Crypto.Protocol.KDF import PBKDF2
 
 __all__ = ['LRequests']
 
@@ -59,50 +59,50 @@ def generator_header():
             }
 
 
-def get_cookies(url, cookiesfile):
+# def get_cookies(url, cookiesfile):
 
-    def chrome_decrypt(encrypted_value, key=None):
-        dec = AES.new(key, AES.MODE_CBC, IV=iv).decrypt(encrypted_value[3:])
-        decrypted = dec[:-dec[-1]].decode('utf8')
-        return decrypted
+#     def chrome_decrypt(encrypted_value, key=None):
+#         dec = AES.new(key, AES.MODE_CBC, IV=iv).decrypt(encrypted_value[3:])
+#         decrypted = dec[:-dec[-1]].decode('utf8')
+#         return decrypted
 
-    my_pass = 'peanuts'.encode('utf8')
-    salt = b'saltysalt'
-    iv = b' ' * 16
-    length = 16
-    key = PBKDF2(my_pass, salt, length, 1)
-    cookies = []
-    if sys.platform == 'win32':
-        import win32crypt
-        conn = sqlite3.connect(cookiesfile)
-        cursor = conn.cursor()
-        cursor.execute('SELECT name, value, encrypted_value FROM cookies WHERE host_key like "' + url + '"')
-        for name, value, encrypted_value in cursor.fetchall():
+#     my_pass = 'peanuts'.encode('utf8')
+#     salt = b'saltysalt'
+#     iv = b' ' * 16
+#     length = 16
+#     key = PBKDF2(my_pass, salt, length, 1)
+#     cookies = []
+#     if sys.platform == 'win32':
+#         import win32crypt
+#         conn = sqlite3.connect(cookiesfile)
+#         cursor = conn.cursor()
+#         cursor.execute('SELECT name, value, encrypted_value FROM cookies WHERE host_key like "' + url + '"')
+#         for name, value, encrypted_value in cursor.fetchall():
 
-            decrypted_value = win32crypt.CryptUnprotectData(encrypted_value, None, None, None, 0)[1].decode('utf-8') or value or 0
-            print(decrypted_value)
-            if value or (encrypted_value[:3] == b'v101'):
-                cookies.append((name, value, url))
-            else:
-                # decrypted_value = win32crypt.CryptUnprotectData(encrypted_value, None, None, None, 0)[1].decode('utf-8') or 'ERROR'
-                decrypted_tuple = (name, chrome_decrypt(encrypted_value, key=key))
-                cookies.append((name, decrypted_value))
+#             decrypted_value = win32crypt.CryptUnprotectData(encrypted_value, None, None, None, 0)[1].decode('utf-8') or value or 0
+#             print(decrypted_value)
+#             if value or (encrypted_value[:3] == b'v101'):
+#                 cookies.append((name, value, url))
+#             else:
+#                 # decrypted_value = win32crypt.CryptUnprotectData(encrypted_value, None, None, None, 0)[1].decode('utf-8') or 'ERROR'
+#                 decrypted_tuple = (name, chrome_decrypt(encrypted_value, key=key))
+#                 cookies.append((name, decrypted_value))
 
-    elif sys.platform == 'linux':
-        my_pass = 'peanuts'.encode('utf8')
-        iterations = 1
-        key = PBKDF2(my_pass, salt, length, iterations)
-        conn = sqlite3.connect(cookiesfile)
-        cursor = conn.cursor()
-        cursor.execute('SELECT name, value, encrypted_value FROM cookies WHERE host_key like "' + url + '"')
-        for name, value, encrypted_value in cursor.fetchall():
-            decrypted_tuple = (name, chrome_decrypt(encrypted_value, key=key))
-            cookies.append(decrypted_tuple)
-    else:
-        print('This tool is only supported by linux and Mac and Windows')
+#     elif sys.platform == 'linux':
+#         my_pass = 'peanuts'.encode('utf8')
+#         iterations = 1
+#         key = PBKDF2(my_pass, salt, length, iterations)
+#         conn = sqlite3.connect(cookiesfile)
+#         cursor = conn.cursor()
+#         cursor.execute('SELECT name, value, encrypted_value FROM cookies WHERE host_key like "' + url + '"')
+#         for name, value, encrypted_value in cursor.fetchall():
+#             decrypted_tuple = (name, chrome_decrypt(encrypted_value, key=key))
+#             cookies.append(decrypted_tuple)
+#     else:
+#         print('This tool is only supported by linux and Mac and Windows')
 
-    conn.close()
-    return cookies
+#     conn.close()
+#     return cookies
 
 class LRequests(object):
     def __init__(self, string_proxy=None, headers=None, cookies=None, timeout=90, debuglevel=0, **kwargs):

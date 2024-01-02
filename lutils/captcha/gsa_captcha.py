@@ -45,15 +45,26 @@ class GsaCaptcha():
     # def decode_stream(self, file_data):
     #     try:
 
-    #         form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
-    #         form.add_file(io.StringIO(file_data), name='file')
-    #         self.lr.load(form.click(), is_xpath=False)
+    #         # form = ParseFile(io.StringIO(gsa_form_str % (self.ip, self.port)), base_uri='http://%s:%s' % (self.ip, self.port))[0]
+    #         # form.add_file(io.StringIO(file_data), name='file')
+    #         # self.lr.load(form.click(), is_xpath=False)
+    #         # result = ''
+    #         # gsa_result = self.lr.body
+    #         # if gsa_result.find('<span id="captcha_result">') > -1:
+    #         #     result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
+
+    #         # return result
+
+    #         files = {'file': file_data}
+    #         r = requests.post('http://%s:%s' % (self.ip, self.port), files=files)
+    #         gsa_result = r.text
     #         result = ''
-    #         gsa_result = self.lr.body
-    #         if gsa_result.find('<span id="captcha_result">') > -1:
-    #             result = gsa_result.split('<span id="captcha_result">')[1].split('</span>')[0]
+    #         if gsa_result.find('text=') > -1:
+    #             result = gsa_result.split('text=')[-1].strip()
 
     #         return result
+
+            
     #     except:
     #         raise
 
